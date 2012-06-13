@@ -375,7 +375,7 @@ entry_generator_cachedir (GHashTable *users,
                 filename = g_build_filename (USERDIR, name, NULL);
                 key_file = g_key_file_new ();
                 if (g_key_file_load_from_file (key_file, filename, 0, NULL))
-                        user_local_update_from_keyfile (user, key_file);
+                        user_update_from_keyfile (user, key_file);
                 g_key_file_free (key_file);
                 g_free (filename);
         }
@@ -413,17 +413,17 @@ load_entries (Daemon             *daemon,
 
                 user = g_hash_table_lookup (daemon->priv->users, pwent->pw_name);
                 if (user == NULL) {
-                        user = user_local_new (daemon, pwent->pw_uid);
+                        user = user_new (daemon, pwent->pw_uid);
                 } else {
                         g_object_ref (user);
                 }
 
                 /* freeze & update users not already in the new list */
                 g_object_freeze_notify (G_OBJECT (user));
-                user_local_update_from_pwent (user, pwent);
+                user_update_from_pwent (user, pwent);
 
-                g_hash_table_insert (users, g_strdup (user_local_get_user_name (user)), user);
-                g_debug ("loaded user: %s", user_local_get_user_name (user));
+                g_hash_table_insert (users, g_strdup (user_get_user_name (user)), user);
+                g_debug ("loaded user: %s", user_get_user_name (user));
         }
 
         /* Generator should have cleaned up */
@@ -466,9 +466,9 @@ reload_users (Daemon *daemon)
         g_hash_table_iter_init (&iter, old_users);
         while (g_hash_table_iter_next (&iter, &name, (gpointer *)&user)) {
                 if (!g_hash_table_lookup (users, name)) {
-                        user_local_unregister (user);
+                        user_unregister (user);
                         accounts_accounts_emit_user_deleted (ACCOUNTS_ACCOUNTS (daemon),
-                                                             user_local_get_object_path (user));
+                                                             user_get_object_path (user));
                 }
         }
 
@@ -476,9 +476,9 @@ reload_users (Daemon *daemon)
         g_hash_table_iter_init (&iter, users);
         while (g_hash_table_iter_next (&iter, &name, (gpointer *)&user)) {
                 if (!g_hash_table_lookup (old_users, name)) {
-                        user_local_register (user);
+                        user_register (user);
                         accounts_accounts_emit_user_added (ACCOUNTS_ACCOUNTS (daemon),
-                                                           user_local_get_object_path (user));
+                                                           user_get_object_path (user));
                 }
                 g_object_thaw_notify (G_OBJECT (user));
         }
@@ -784,15 +784,15 @@ add_new_user_for_pwent (Daemon        *daemon,
 {
         User *user;
 
-        user = user_local_new (daemon, pwent->pw_uid);
-        user_local_update_from_pwent (user, pwent);
-        user_local_register (user);
+        user = user_new (daemon, pwent->pw_uid);
+        user_update_from_pwent (user, pwent);
+        user_register (user);
 
         g_hash_table_insert (daemon->priv->users,
-                             g_strdup (user_local_get_user_name (user)),
+                             g_strdup (user_get_user_name (user)),
                              user);
 
-        accounts_accounts_emit_user_added (ACCOUNTS_ACCOUNTS (daemon), user_local_get_object_path (user));
+        accounts_accounts_emit_user_added (ACCOUNTS_ACCOUNTS (daemon), user_get_object_path (user));
 
         return user;
 }
@@ -850,7 +850,7 @@ daemon_find_user_by_id (AccountsAccounts      *accounts,
         user = daemon_local_find_user_by_id (daemon, uid);
 
         if (user) {
-                accounts_accounts_complete_find_user_by_id (NULL, context, user_local_get_object_path (user));
+                accounts_accounts_complete_find_user_by_id (NULL, context, user_get_object_path (user));
         }
         else {
                 throw_error (context, ERROR_FAILED, "Failed to look up user with uid %d.", (int)uid);
@@ -870,7 +870,7 @@ daemon_find_user_by_name (AccountsAccounts      *accounts,
         user = daemon_local_find_user_by_name (daemon, name);
 
         if (user) {
-                accounts_accounts_complete_find_user_by_name (NULL, context, user_local_get_object_path (user));
+                accounts_accounts_complete_find_user_by_name (NULL, context, user_get_object_path (user));
         }
         else {
                 throw_error (context, ERROR_FAILED, "Failed to look up user with name %s.", name);
@@ -921,10 +921,10 @@ finish_list_cached_users (gpointer user_data)
 
         g_hash_table_iter_init (&iter, data->daemon->priv->users);
         while (g_hash_table_iter_next (&iter, (gpointer *)&name, (gpointer *)&user)) {
-                uid = user_local_get_uid (user);
-                shell = user_local_get_shell (user);
+                uid = user_get_uid (user);
+                shell = user_get_shell (user);
 
-                if (user_local_get_system_account (user)) {
+                if (user_get_system_account (user)) {
                         g_debug ("user %s %ld is system account, so excluded\n", name, (long) uid);
                         continue;
                 }
@@ -935,7 +935,7 @@ finish_list_cached_users (gpointer user_data)
                 }
 
                 g_debug ("user %s %ld not excluded\n", name, (long) uid);
-                g_ptr_array_add (object_paths, (gpointer) user_local_get_object_path (user));
+                g_ptr_array_add (object_paths, (gpointer) user_get_object_path (user));
         }
         g_ptr_array_add (object_paths, NULL);
 
@@ -1040,7 +1040,7 @@ daemon_create_user_authorized_cb (Daemon                *daemon,
 
         user = daemon_local_find_user_by_name (daemon, cd->user_name);
 
-        accounts_accounts_complete_create_user (NULL, context, user_local_get_object_path (user));
+        accounts_accounts_complete_create_user (NULL, context, user_get_object_path (user));
 }
 
 static gboolean
@@ -1092,7 +1092,7 @@ daemon_cache_user_authorized_cb (Daemon                *daemon,
         }
 
         /* Always use the canonical user name looked up */
-        user_name = user_local_get_user_name (user);
+        user_name = user_get_user_name (user);
 
         filename = g_build_filename (USERDIR, user_name, NULL);
         if (!g_file_test (filename, G_FILE_TEST_EXISTS)) {
@@ -1109,7 +1109,7 @@ daemon_cache_user_authorized_cb (Daemon                *daemon,
 
         g_free (filename);
 
-        accounts_accounts_complete_cache_user (NULL, context, user_local_get_object_path (user));
+        accounts_accounts_complete_cache_user (NULL, context, user_get_object_path (user));
 }
 
 static gboolean
@@ -1159,7 +1159,7 @@ daemon_uncache_user_authorized_cb (Daemon                *daemon,
         }
 
         /* Always use the canonical user name looked up */
-        user_name = user_local_get_user_name (user);
+        user_name = user_get_user_name (user);
 
         filename = g_build_filename (USERDIR, user_name, NULL);
         g_remove (filename);
@@ -1476,7 +1476,7 @@ daemon_local_set_automatic_login (Daemon    *daemon,
                 return TRUE;
         }
 
-        if (!save_autologin (daemon, user_local_get_user_name (user), enabled, error)) {
+        if (!save_autologin (daemon, user_get_user_name (user), enabled, error)) {
                 return FALSE;
         }
 
