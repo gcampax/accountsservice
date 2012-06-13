@@ -64,7 +64,8 @@ enum {
         PROP_PASSWORD_MODE,
         PROP_PASSWORD_HINT,
         PROP_AUTOMATIC_LOGIN,
-        PROP_SYSTEM_ACCOUNT
+        PROP_SYSTEM_ACCOUNT,
+        PROP_LOCAL_ACCOUNT,
 };
 
 struct User {
@@ -94,6 +95,7 @@ struct User {
         gboolean      locked;
         gboolean      automatic_login;
         gboolean      system_account;
+        gboolean      local_account;
 };
 
 typedef struct UserClass
@@ -337,6 +339,16 @@ user_update_from_keyfile (User     *user,
         g_object_thaw_notify (G_OBJECT (user));
 }
 
+void
+user_update_local_account_property (User          *user,
+                                    gboolean       local)
+{
+        if (local == user->local_account)
+                return;
+        user->local_account = local;
+        g_object_notify (G_OBJECT (user), "local-account");
+}
+
 static void
 user_save_to_keyfile (User     *user,
                       GKeyFile *keyfile)
@@ -474,6 +486,12 @@ gboolean
 user_get_system_account (User *user)
 {
         return user->system_account;
+}
+
+gboolean
+user_get_local_account (User *user)
+{
+        return user->local_account;
 }
 
 const gchar *
@@ -1830,6 +1848,9 @@ user_get_property (GObject    *object,
                 break;
         case PROP_SYSTEM_ACCOUNT:
                 g_value_set_boolean (value, user->system_account);
+                break;
+        case PROP_LOCAL_ACCOUNT:
+                g_value_set_boolean (value, user->local_account);
                 break;
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);

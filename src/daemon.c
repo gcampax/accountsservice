@@ -444,6 +444,7 @@ reload_users (Daemon *daemon)
 {
         GHashTable *users;
         GHashTable *old_users;
+        GHashTable *local;
         GHashTableIter iter;
         gpointer name;
         User *user;
@@ -451,12 +452,31 @@ reload_users (Daemon *daemon)
         /* Track the users that we saw during our (re)load */
         users = create_users_hash_table ();
 
-        /* Load data from all the sources, and freeze notifies */
+        /*
+         * NOTE: As we load data from all the sources, notifies are
+         * frozen in load_entries() and then thawed as we process
+         * them below.
+         */
+
+        /* Load the local users into our hash table */
         load_entries (daemon, users, entry_generator_fgetpwent);
+        local = g_hash_table_new (g_str_hash, g_str_equal);
+        g_hash_table_iter_init (&iter, users);
+        while (g_hash_table_iter_next (&iter, &name, NULL))
+                g_hash_table_add (local, name);
+
+        /* Now add/update users from other sources, possibly non-local */
 #ifdef HAVE_UTMPX_H
         load_entries (daemon, users, entry_generator_wtmp);
 #endif
         load_entries (daemon, users, entry_generator_cachedir);
+
+        /* Mark which users are local, which are not */
+        g_hash_table_iter_init (&iter, users);
+        while (g_hash_table_iter_next (&iter, &name, (gpointer *)&user))
+                user_update_local_account_property (user, g_hash_table_lookup (local, name) != NULL);
+
+        g_hash_table_destroy (local);
 
         /* Swap out the users */
         old_users = daemon->priv->users;
@@ -1039,6 +1059,7 @@ daemon_create_user_authorized_cb (Daemon                *daemon,
         }
 
         user = daemon_local_find_user_by_name (daemon, cd->user_name);
+        user_update_local_account_property (user, TRUE);
 
         accounts_accounts_complete_create_user (NULL, context, user_get_object_path (user));
 }

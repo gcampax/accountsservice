@@ -55,6 +55,7 @@ enum {
         PROP_LOCKED,
         PROP_AUTOMATIC_LOGIN,
         PROP_SYSTEM_ACCOUNT,
+        PROP_LOCAL_ACCOUNT,
         PROP_LOGIN_FREQUENCY,
         PROP_ICON_FILE,
         PROP_LANGUAGE,
@@ -98,6 +99,7 @@ struct _ActUser {
         guint           locked : 1;
         guint           automatic_login : 1;
         guint           system_account : 1;
+        guint           local_account : 1;
 };
 
 struct _ActUserClass
@@ -248,6 +250,9 @@ act_user_get_property (GObject    *object,
         case PROP_SYSTEM_ACCOUNT:
                 g_value_set_boolean (value, user->system_account);
                 break;
+        case PROP_LOCAL_ACCOUNT:
+                g_value_set_boolean (value, user->local_account);
+                break;
         case PROP_IS_LOADED:
                 g_value_set_boolean (value, user->is_loaded);
                 break;
@@ -396,6 +401,14 @@ act_user_class_init (ActUserClass *class)
                                          g_param_spec_boolean ("automatic-login",
                                                                "Automatic Login",
                                                                "Automatic Login",
+                                                               FALSE,
+                                                               G_PARAM_READABLE));
+
+        g_object_class_install_property (gobject_class,
+                                         PROP_LOCAL_ACCOUNT,
+                                         g_param_spec_boolean ("local-account",
+                                                               "Local Account",
+                                                               "Local Account",
                                                                FALSE,
                                                                G_PARAM_READABLE));
 
@@ -804,6 +817,22 @@ act_user_is_system_account (ActUser *user)
 }
 
 /**
+ * act_user_is_local_account:
+ * @user: the user object to examine.
+ *
+ * Retrieves whether the user is a local account or not.
+ *
+ * Returns: (transfer none): %TRUE if the user is local
+ **/
+gboolean
+act_user_is_local_account (ActUser   *user)
+{
+        g_return_val_if_fail (ACT_IS_USER (user), FALSE);
+
+        return user->local_account;
+}
+
+/**
  * act_user_get_icon_file:
  * @user: a #ActUser
  *
@@ -1008,6 +1037,14 @@ collect_props (const gchar *key,
                 if (new_system_account_state != user->system_account) {
                         user->system_account = new_system_account_state;
                         g_object_notify (G_OBJECT (user), "system-account");
+                }
+        } else if (strcmp (key, "LocalAccount") == 0) {
+                gboolean new_local;
+
+                new_local = g_variant_get_boolean (value);
+                if (user->local_account != new_local) {
+                        user->local_account = new_local;
+                        g_object_notify (G_OBJECT (user), "local-account");
                 }
         } else if (strcmp (key, "LoginFrequency") == 0) {
                 int new_login_frequency;

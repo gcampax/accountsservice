@@ -57,12 +57,15 @@ void           user_update_from_pwent       (User          *user,
                                              struct passwd *pwent);
 void           user_update_from_keyfile     (User          *user,
                                              GKeyFile      *keyfile);
+void           user_update_local_account_property (User          *user,
+                                                   gboolean       local);
 
 void           user_register                (User          *user);
 void           user_unregister              (User          *user);
 
 const gchar *  user_get_user_name           (User          *user);
 gboolean       user_get_system_account      (User          *user);
+gboolean       user_get_local_account       (User          *user);
 const gchar *  user_get_object_path         (User          *user);
 uid_t          user_get_uid                 (User          *user);
 const gchar *  user_get_shell               (User          *user);
