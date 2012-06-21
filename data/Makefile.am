@@ -18,6 +18,9 @@ policydir       = $(datadir)/polkit-1/actions
 policy_in_files = org.freedesktop.accounts.policy.in
 policy_DATA     = $(policy_in_files:.policy.in=.policy)
 
+pamdir = $(sysconfdir)/pam.d
+dist_pam_DATA = accountsservice
+
 @INTLTOOL_POLICY_RULE@
 
 if HAVE_SYSTEMD

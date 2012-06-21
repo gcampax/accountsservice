@@ -6,8 +6,12 @@ INCLUDES = 			\
 	-DDATADIR=\""$(datadir)"\" \
 	-DICONDIR=\"$(localstatedir)/lib/AccountsService/icons\" \
 	-DUSERDIR=\"$(localstatedir)/lib/AccountsService/users\" \
+	-DLIBEXECDIR=\"$(libexecdir)\" \
 	-I$(srcdir)		\
 	-I$(builddir)		\
+	$(DBUS_GLIB_CFLAGS) 	\
+	$(GIO_CFLAGS)	 	\
+	$(GLIB_CFLAGS)		\
 	$(POLKIT_CFLAGS)	\
 	$(WARN_CFLAGS)
 
@@ -27,7 +31,7 @@ accounts-generated.c accounts-generated.h: $(top_srcdir)/data/org.freedesktop.Ac
 accounts-user-generated.c accounts-user-generated.h: $(top_srcdir)/data/org.freedesktop.Accounts.User.xml Makefile
 	gdbus-codegen --generate-c-code accounts-user-generated --c-namespace Accounts --interface-prefix=org.freedesktop.Accounts. $(top_srcdir)/data/org.freedesktop.Accounts.User.xml
 
-libexec_PROGRAMS = accounts-daemon
+libexec_PROGRAMS = accounts-daemon accounts-daemon-pam-password-helper
 
 accounts_daemon_SOURCES = 	\
 	$(enums_h_sources)	\
@@ -43,6 +47,12 @@ accounts_daemon_SOURCES = 	\
 accounts_daemon_LDADD = 	\
 	libaccounts-generated.la	\
 	$(POLKIT_LIBS)
+
+accounts_daemon_pam_password_helper_SOURCES = \
+	pam-password-helper.c
+accounts_daemon_pam_password_helper_LDADD = \
+	$(GLIB_LIBS) 		\
+	-lpam
 
 CLEANFILES = $(BUILT_SOURCES)
 

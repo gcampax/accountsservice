@@ -36,6 +36,11 @@ gboolean spawn_with_login_uid (GDBusMethodInvocation  *context,
                                const gchar            *argv[],
                                GError                **error);
 
+gboolean spawn_with_login_uid_and_stdin (GDBusMethodInvocation  *context,
+                                         const gchar            *argv[],
+                                         const gchar            *stdin,
+                                         GError                **error);
+
 gint get_user_groups (const gchar  *username,
                       gid_t         group,
                       gid_t       **groups);

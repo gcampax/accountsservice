@@ -259,6 +259,109 @@ spawn_with_login_uid (GDBusMethodInvocation  *context,
         return ret;
 }
 
+static char *
+read_all_from_fd (int      fd,
+                  GError **error)
+{
+        GIOChannel *channel;
+        char *str;
+        GIOStatus status;
+
+        channel = g_io_channel_unix_new (fd);
+        while ((status = g_io_channel_read_to_end (channel, &str, NULL, error))
+               == G_IO_STATUS_AGAIN);
+
+        if (status != G_IO_STATUS_NORMAL)
+                str = NULL;
+
+        g_io_channel_unref (channel);
+        return str;
+}
+
+static GIOStatus
+write_all_to_fd (int          fd,
+                 const char  *str,
+                 GError     **error)
+{
+        GIOChannel *channel;
+        GIOStatus status;
+        gsize written;
+
+        channel = g_io_channel_unix_new (fd);
+        written = 0;
+        while ((status = g_io_channel_write_chars (channel, str + written, -1, &written, error))
+               == G_IO_STATUS_AGAIN);
+
+        g_io_channel_unref (channel);
+        return status;
+}
+
+gboolean
+spawn_with_login_uid_and_stdin (GDBusMethodInvocation  *context,
+                                const gchar            *argv[],
+                                const gchar            *stdin,
+                                GError                **error)
+{
+        GError *local_error;
+        gchar loginuid[20];
+        gint std_in, std_err;
+        gint status;
+        char *std_err_str;
+        GPid pid;
+
+        get_caller_loginuid (context, loginuid, 20);
+
+        local_error = NULL;
+
+        if (!g_spawn_async_with_pipes (NULL, (gchar**)argv, NULL,
+                                       G_SPAWN_DO_NOT_REAP_CHILD,
+                                       setup_loginuid, loginuid,
+                                       &pid, &std_in, NULL, &std_err, &local_error)) {
+                g_propagate_error (error, local_error);
+                return FALSE;
+        }
+
+        if (write_all_to_fd (std_in, stdin, &local_error) == G_IO_STATUS_ERROR) {
+                g_prefix_error (&local_error, "Error writing to child standard input: ");
+                g_propagate_error (error, local_error);
+                close (std_in);
+                close (std_err);
+                return FALSE;
+        }
+
+        close (std_in);
+        /* We need to read from stderr before calling waitpid, or the child
+           could be blocked on a pipe buffer flush */
+        std_err_str = read_all_from_fd (std_err, &local_error);
+        /* At this point, it is safe to close std_err: EOF is returned from a pipe
+           read only when the writing end is closed, so when we return from read_all_from_fd()
+           the child is already done, and there is no risk of SIGPIPE
+        */
+        close (std_err);
+
+        waitpid (pid, &status, 0);
+
+        if (std_err_str == NULL) {
+                g_prefix_error (&local_error, "Error reading from child standard error: ");
+                g_propagate_error (error, local_error);
+                return FALSE;
+        }
+
+        if (WEXITSTATUS (status) != 0) {
+                g_set_error (error,
+                             G_SPAWN_ERROR,
+                             G_SPAWN_ERROR_FAILED,
+                             "%s returned an error (%d): %s",
+                             argv[0], WEXITSTATUS(status), std_err_str);
+                g_free (std_err_str);
+                return FALSE;
+        }
+
+        g_free (std_err_str);
+
+        return TRUE;
+}
+
 gint
 get_user_groups (const gchar  *user,
                  gid_t         group,

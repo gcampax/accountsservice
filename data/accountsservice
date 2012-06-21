@@ -1,0 +1,4 @@
+#%PAM-1.0
+password   include      password-auth
+
+

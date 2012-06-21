@@ -1556,6 +1556,18 @@ user_set_password_mode (AccountsUser          *auser,
         return TRUE;
 }
 
+static char *
+build_pam_helper_stdin (const char *password)
+{
+        char *encoded_password, *result;
+
+        encoded_password = g_uri_escape_string (password, NULL, FALSE);
+        result = g_strdup_printf ("%s\n", encoded_password);
+
+        g_free (encoded_password);
+        return result;
+}
+
 static void
 user_change_password_authorized_cb (Daemon                *daemon,
                                     User                  *user,
@@ -1566,6 +1578,7 @@ user_change_password_authorized_cb (Daemon                *daemon,
         gchar **strings = data;
         GError *error;
         const gchar *argv[6];
+        char *stdin;
 
         sys_log (context,
                  "set password and hint of user '%s' (%d)",
@@ -1573,19 +1586,21 @@ user_change_password_authorized_cb (Daemon                *daemon,
 
         g_object_freeze_notify (G_OBJECT (user));
 
-        argv[0] = "/usr/sbin/usermod";
-        argv[1] = "-p";
-        argv[2] = strings[0];
-        argv[3] = "--";
-        argv[4] = user->user_name;
-        argv[5] = NULL;
+        argv[0] = LIBEXECDIR "/accounts-daemon-pam-password-helper";
+        argv[1] = user->user_name;
+        argv[2] = NULL;
 
+        stdin = build_pam_helper_stdin (strings[0]);
         error = NULL;
-        if (!spawn_with_login_uid (context, argv, &error)) {
+
+        if (!spawn_with_login_uid_and_stdin (context, argv, stdin, &error)) {
                 throw_error (context, ERROR_FAILED, "running '%s' failed: %s", argv[0], error->message);
                 g_error_free (error);
+                g_free (stdin);
                 return;
         }
+
+        g_free (stdin);
 
         if (user->password_mode != PASSWORD_MODE_REGULAR) {
                 user->password_mode = PASSWORD_MODE_REGULAR;

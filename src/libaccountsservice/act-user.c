@@ -1808,42 +1808,6 @@ act_user_set_account_type (ActUser            *user,
         }
 }
 
-static gchar
-salt_char (GRand *rand)
-{
-        gchar salt[] = "ABCDEFGHIJKLMNOPQRSTUVXYZ"
-                       "abcdefghijklmnopqrstuvxyz"
-                       "./0123456789";
-
-        return salt[g_rand_int_range (rand, 0, G_N_ELEMENTS (salt))];
-}
-
-static gchar *
-make_crypted (const gchar *plain)
-{
-        GString *salt;
-        gchar *result;
-        GRand *rand;
-        gint i;
-
-        rand = g_rand_new ();
-        salt = g_string_sized_new (21);
-
-        /* SHA 256 */
-        g_string_append (salt, "$6$");
-        for (i = 0; i < 16; i++) {
-                g_string_append_c (salt, salt_char (rand));
-        }
-        g_string_append_c (salt, '$');
-
-        result = g_strdup (crypt (plain, salt->str));
-
-        g_string_free (salt, TRUE);
-        g_rand_free (rand);
-
-        return result;
-}
-
 /**
  * act_user_set_password:
  * @user: the user object to alter.
@@ -1867,17 +1831,14 @@ act_user_set_password (ActUser             *user,
         g_return_if_fail (password != NULL);
         g_return_if_fail (ACCOUNTS_IS_USER (user->accounts_proxy));
 
-        crypted = make_crypted (password);
         if (!accounts_user_call_set_password_sync (user->accounts_proxy,
-                                                   crypted,
+                                                   password,
                                                    hint,
                                                    NULL,
                                                    &error)) {
                 g_warning ("SetPassword call failed: %s", error->message);
                 g_error_free (error);
         }
-        memset (crypted, 0, strlen (crypted));
-        g_free (crypted);
 }
 
 /**
