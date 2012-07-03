@@ -257,6 +257,19 @@ if test "x$with_systemdsystemunitdir" != "xno"; then
 fi
 AM_CONDITIONAL(HAVE_SYSTEMD, [test -n "$with_systemdsystemunitdir" -a "x$with_systemdsystemunitdir" != "xno" ])
 
+dnl ---------------------------------------------------------------------------
+dnl PIN authentication support
+dnl ---------------------------------------------------------------------------
+
+AC_ARG_ENABLE([pin-authentication],
+	AS_HELP_STRING([--disable-pin-authentication], [Disable PAM module for PIN (short password) login]),
+	[],
+	[enable_pin_authentication=yes])
+if test x$enable_pin_autentication != xno ; then
+   AM_PATH_LIBGCRYPT
+fi
+AM_CONDITIONAL(HAVE_PAM_MODULE, [test x$enable_pin_authentication != xno])
+
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
 Makefile
@@ -265,6 +278,7 @@ data/Makefile
 src/Makefile
 src/libaccountsservice/Makefile
 src/libaccountsservice/accountsservice.pc
+src/pam-pin/Makefile
 doc/Makefile
 doc/dbus/Makefile
 doc/dbus/AccountsService.xml

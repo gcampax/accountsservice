@@ -1,6 +1,11 @@
 NULL =
 BUILT_SOURCES =
 SUBDIRS = . libaccountsservice
+
+if HAVE_PAM_MODULE
+SUBDIRS += pam-pin
+endif
+
 INCLUDES = 			\
 	-DLOCALSTATEDIR=\""$(localstatedir)"\" \
 	-DDATADIR=\""$(datadir)"\" \
