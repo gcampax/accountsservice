@@ -1,3 +1,10 @@
+Changes in 0.6.23
+=================
+
+* Fix up some debug output
+* add new CacheUser and UncacheUser apis
+* uncache user before deleting user
+
 Changes in 0.6.22
 =================
 
