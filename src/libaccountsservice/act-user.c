@@ -172,23 +172,6 @@ act_user_get_num_sessions (ActUser    *user)
 }
 
 static void
-act_user_set_property (GObject      *object,
-                       guint         param_id,
-                       const GValue *value,
-                       GParamSpec   *pspec)
-{
-        ActUser *user;
-
-        user = ACT_USER (object);
-
-        switch (param_id) {
-        default:
-                G_OBJECT_WARN_INVALID_PROPERTY_ID (object, param_id, pspec);
-                break;
-        }
-}
-
-static void
 act_user_get_property (GObject    *object,
                        guint       param_id,
                        GValue     *value,
@@ -271,7 +254,6 @@ act_user_class_init (ActUserClass *class)
         gobject_class = G_OBJECT_CLASS (class);
 
         gobject_class->finalize = act_user_finalize;
-        gobject_class->set_property = act_user_set_property;
         gobject_class->get_property = act_user_get_property;
 
         g_object_class_install_property (gobject_class,
