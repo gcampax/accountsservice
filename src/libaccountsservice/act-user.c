@@ -1121,7 +1121,7 @@ on_get_all_finished (GObject        *object,
         g_signal_emit (user, signals[CHANGED], 0);
 }
 
-static gboolean
+static void
 update_info (ActUser *user)
 {
         g_assert (G_IS_DBUS_PROXY (user->object_proxy));
@@ -1140,10 +1140,6 @@ update_info (ActUser *user)
                            user->get_all_call,
                            on_get_all_finished,
                            user);
-        return TRUE;
-
-failed:
-        return FALSE;
 }
 
 static void
@@ -1204,9 +1200,7 @@ _act_user_update_from_object_path (ActUser    *user,
                 return;
         }
 
-        if (!update_info (user)) {
-                g_warning ("Couldn't update info for user with object path %s", object_path);
-        }
+       update_info (user);
 }
 
 void
