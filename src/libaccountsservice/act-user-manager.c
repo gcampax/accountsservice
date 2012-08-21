@@ -2721,7 +2721,9 @@ act_user_manager_delete_user (ActUserManager  *manager,
 
         g_debug ("ActUserManager: Deleting user '%s' (uid %ld)", act_user_get_user_name (user), (long) act_user_get_uid (user));
 
-        g_assert (manager->priv->accounts_proxy != NULL);
+        g_return_val_if_fail (ACT_IS_USER_MANAGER (manager), FALSE);
+        g_return_val_if_fail (ACT_IS_USER (user), FALSE);
+        g_return_val_if_fail (manager->priv->accounts_proxy != NULL, FALSE);
 
         local_error = NULL;
         if (!accounts_accounts_call_delete_user_sync (manager->priv->accounts_proxy,
