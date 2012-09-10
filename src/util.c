@@ -37,7 +37,7 @@
 static gchar *
 get_cmdline_of_pid (GPid pid)
 {
-  gchar *ret;
+  gchar *ret = NULL;
   gchar *filename;
   gchar *contents;
   gsize contents_len;
