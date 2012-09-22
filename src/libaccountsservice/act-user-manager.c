@@ -1633,6 +1633,8 @@ reload_systemd_sessions (ActUserManager *manager)
         int         i;
         char       **sessions;
         GHashTable  *systemd_sessions;
+        char        *state;
+        gboolean     is_closing;
 
 
         res = sd_get_sessions (&sessions);
@@ -1647,6 +1649,20 @@ reload_systemd_sessions (ActUserManager *manager)
 
         if (sessions != NULL) {
                 for (i = 0; sessions[i] != NULL; i ++) {
+                        res = sd_session_get_state (sessions[i], &state);
+
+                        if (res < 0) {
+                                g_debug ("Failed to determine state of session %s: %s", sessions[i], strerror (-res));
+                                continue;
+                        }
+
+                        is_closing = g_strcmp0 (state, "closing") == 0;
+                        free (state);
+
+                        if (is_closing) {
+                                continue;
+                        }
+
                         g_hash_table_insert (systemd_sessions,
                                              sessions[i], NULL);
                 }
