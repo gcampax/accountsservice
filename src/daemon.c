@@ -1285,7 +1285,7 @@ daemon_delete_user (AccountsAccounts      *accounts,
         DeleteUserData *data;
 
         if (uid == 0) {
-                throw_error (context, ERROR_USER_FAILED, "Refuse to delete root user");
+                throw_error (context, ERROR_FAILED, "Refuse to delete root user");
                 return TRUE;
         }
 
