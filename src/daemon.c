@@ -1284,6 +1284,11 @@ daemon_delete_user (AccountsAccounts      *accounts,
         Daemon *daemon = (Daemon*)accounts;
         DeleteUserData *data;
 
+        if (uid == 0) {
+                throw_error (context, ERROR_USER_FAILED, "Refuse to delete root user");
+                return TRUE;
+        }
+
         data = g_new0 (DeleteUserData, 1);
         data->uid = uid;
         data->remove_files = remove_files;
