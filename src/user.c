@@ -59,6 +59,7 @@ enum {
         PROP_X_SESSION,
         PROP_LOCATION,
         PROP_LOGIN_FREQUENCY,
+        PROP_LOGIN_TIME,
         PROP_ICON_FILE,
         PROP_LOCKED,
         PROP_PASSWORD_MODE,
@@ -90,6 +91,7 @@ struct User {
         gchar        *x_session;
         gchar        *location;
         guint64       login_frequency;
+        gint64        login_time;
         gchar        *icon_file;
         gchar        *default_icon_file;
         gboolean      locked;
@@ -1683,6 +1685,12 @@ user_real_get_login_frequency (AccountsUser *user)
         return USER (user)->login_frequency;
 }
 
+static gint64
+user_real_get_login_time (AccountsUser *user)
+{
+        return USER (user)->login_time;
+}
+
 static const gchar *
 user_real_get_icon_file (AccountsUser *user)
 {
@@ -1770,6 +1778,9 @@ user_set_property (GObject      *object,
         case PROP_LOGIN_FREQUENCY:
                 user->login_frequency = g_value_get_uint64 (value);
                 break;
+        case PROP_LOGIN_TIME:
+                user->login_time = g_value_get_int64 (value);
+                break;
         case PROP_AUTOMATIC_LOGIN:
                 user->automatic_login = g_value_get_boolean (value);
                 break;
@@ -1840,6 +1851,9 @@ user_get_property (GObject    *object,
         case PROP_LOGIN_FREQUENCY:
                 g_value_set_uint64 (value, user->login_frequency);
                 break;
+        case PROP_LOGIN_TIME:
+                g_value_set_int64 (value, user->login_time);
+                break;
         case PROP_LOCKED:
                 g_value_set_boolean (value, user->locked);
                 break;
@@ -1900,6 +1914,7 @@ user_accounts_user_iface_init (AccountsUserIface *iface)
         iface->get_xsession = user_real_get_xsession;
         iface->get_location = user_real_get_location;
         iface->get_login_frequency = user_real_get_login_frequency;
+        iface->get_login_time = user_real_get_login_time;
         iface->get_icon_file = user_real_get_icon_file;
         iface->get_locked = user_real_get_locked;
         iface->get_password_mode = user_real_get_password_mode;

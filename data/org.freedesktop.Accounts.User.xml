@@ -653,6 +653,16 @@
     </doc:doc>
   </property>
 
+  <property name="LoginTime" type="x" access="read">
+    <doc:doc>
+      <doc:description>
+        <doc:para>
+          The last login time.
+        </doc:para>
+      </doc:description>
+    </doc:doc>
+  </property>
+
   <property name="IconFile" type="s" access="read">
     <doc:doc>
       <doc:description>

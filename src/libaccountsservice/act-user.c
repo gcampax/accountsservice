@@ -57,6 +57,7 @@ enum {
         PROP_SYSTEM_ACCOUNT,
         PROP_LOCAL_ACCOUNT,
         PROP_LOGIN_FREQUENCY,
+        PROP_LOGIN_TIME,
         PROP_ICON_FILE,
         PROP_LANGUAGE,
         PROP_X_SESSION,
@@ -91,6 +92,7 @@ struct _ActUser {
         char           *x_session;
         GList          *sessions;
         int             login_frequency;
+        gint64          login_time;
 
         ActUserAccountType  account_type;
         ActUserPasswordMode password_mode;
@@ -205,6 +207,9 @@ act_user_get_property (GObject    *object,
                 break;
         case PROP_LOGIN_FREQUENCY:
                 g_value_set_int (value, user->login_frequency);
+                break;
+        case PROP_LOGIN_TIME:
+                g_value_set_int64 (value, user->login_time);
                 break;
         case PROP_SHELL:
                 g_value_set_string (value, user->shell);
@@ -342,6 +347,15 @@ act_user_class_init (ActUserClass *class)
                                                            G_MAXINT,
                                                            0,
                                                            G_PARAM_READABLE));
+        g_object_class_install_property (gobject_class,
+                                         PROP_LOGIN_TIME,
+                                         g_param_spec_int64 ("login-time",
+                                                             "Login time",
+                                                             "The last login time for this user.",
+                                                             0,
+                                                             G_MAXINT64,
+                                                             0,
+                                                             G_PARAM_READABLE));
         g_object_class_install_property (gobject_class,
                                          PROP_ICON_FILE,
                                          g_param_spec_string ("icon-file",
@@ -674,6 +688,21 @@ act_user_get_login_frequency (ActUser *user)
         g_return_val_if_fail (ACT_IS_USER (user), 0);
 
         return user->login_frequency;
+}
+
+/**
+ * act_user_get_login_time:
+ * @user: a #ActUser
+ *
+ * Returns the last login time for @user.
+ *
+ * Returns: (transfer none): the login time
+ */
+gint64
+act_user_get_login_time (ActUser *user) {
+        g_return_val_if_fail (ACT_IS_USER (user), 0);
+
+        return user->login_time;
 }
 
 int
@@ -1035,6 +1064,13 @@ collect_props (const gchar *key,
                 if ((int) user->login_frequency != (int) new_login_frequency) {
                         user->login_frequency = new_login_frequency;
                         g_object_notify (G_OBJECT (user), "login-frequency");
+                }
+        } else if (strcmp (key, "LoginTime") == 0) {
+                gint64 new_login_time = value;
+
+                if (user->login_time != new_login_time) {
+                        user->login_time = new_login_time;
+                        g_object_notify (G_OBJECT (user), "login-time");
                 }
         } else if (strcmp (key, "IconFile") == 0) {
                 const char *new_icon_file;
