@@ -756,7 +756,7 @@ remove_user (ActUserManager *manager,
 
         g_object_unref (user);
 
-        if (g_hash_table_size (manager->priv->normal_users_by_name) > 1) {
+        if (g_hash_table_size (manager->priv->normal_users_by_name) <= 1) {
                 set_has_multiple_users (manager, FALSE);
         }
 }
