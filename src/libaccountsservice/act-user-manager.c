@@ -1701,7 +1701,7 @@ _monitor_for_systemd_session_changes (ActUserManager *manager)
         res = sd_login_monitor_new ("session", &manager->priv->seat.session_monitor);
 
         if (res < 0) {
-                g_warning ("Failed to connect to the ConsoleKit seat object: %s",
+                g_warning ("Failed to monitor logind session changes: %s",
                            strerror (-res));
                 unload_seat (manager);
                 return;
