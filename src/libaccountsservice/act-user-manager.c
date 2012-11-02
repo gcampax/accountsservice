@@ -107,6 +107,7 @@ typedef struct
         GCancellable                    *cancellable;
         uid_t                            uid;
         char                            *x11_display;
+        gsize                            pending_calls;
 } ActUserManagerNewSession;
 
 typedef enum {
@@ -984,6 +985,11 @@ unload_new_session (ActUserManagerNewSession *new_session)
 {
         ActUserManager *manager;
 
+	/* From here down to the check on pending_calls is idempotent,
+	 * like GObject dispose(); it can be called twice if the new session
+	 * is unloaded while there are still async calls pending.
+	 */
+
         manager = new_session->manager;
 
         if (new_session->cancellable != NULL &&
@@ -993,16 +999,29 @@ unload_new_session (ActUserManagerNewSession *new_session)
                 new_session->cancellable = NULL;
         }
 
-        manager->priv->new_sessions = g_slist_remove (manager->priv->new_sessions,
-                                                      new_session);
-
         if (new_session->proxy != NULL) {
                 g_object_unref (new_session->proxy);
+                new_session->proxy = NULL;
         }
 
         g_free (new_session->x11_display);
+        new_session->x11_display = NULL;
         g_free (new_session->id);
-        g_object_unref (manager);
+        new_session->id = NULL;
+
+        if (manager != NULL) {
+                manager->priv->new_sessions = g_slist_remove (manager->priv->new_sessions,
+                                                              new_session);
+
+                new_session->manager = NULL;
+                g_object_unref (manager);
+        }
+
+        if (new_session->pending_calls != 0) {
+                /* don't "finalize" until we run out of pending calls
+		 * that have us as their user_data */
+                return;
+        }
 
         g_slice_free (ActUserManagerNewSession, new_session);
 }
@@ -1048,7 +1067,10 @@ on_get_unix_user_finished (GObject      *object,
         GError            *error = NULL;
         guint              uid;
 
+        new_session->pending_calls--;
+
         if (new_session->cancellable == NULL || g_cancellable_is_cancelled (new_session->cancellable)) {
+                unload_new_session (new_session);
                 return;
         }
 
@@ -1110,6 +1132,7 @@ get_uid_for_new_session (ActUserManagerNewSession *new_session)
 
         g_assert (new_session->proxy != NULL);
 
+        new_session->pending_calls++;
         console_kit_session_call_get_unix_user (new_session->proxy,
                                                 new_session->cancellable,
                                                 on_get_unix_user_finished,
@@ -1251,7 +1274,10 @@ on_get_x11_display_finished (GObject      *object,
         GError            *error = NULL;
         char              *x11_display;
 
+        new_session->pending_calls--;
+
         if (new_session->cancellable == NULL || g_cancellable_is_cancelled (new_session->cancellable)) {
+                unload_new_session (new_session);
                 return;
         }
 
@@ -1340,6 +1366,7 @@ get_x11_display_for_new_session (ActUserManagerNewSession *new_session)
 
         g_assert (new_session->proxy != NULL);
 
+        new_session->pending_calls++;
         console_kit_session_call_get_x11_display (new_session->proxy,
                                                   new_session->cancellable,
                                                   on_get_x11_display_finished,
