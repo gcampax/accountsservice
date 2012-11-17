@@ -2572,7 +2572,7 @@ act_user_manager_finalize (GObject *object)
 
 #ifdef WITH_SYSTEMD
         if (manager->priv->seat.session_monitor != NULL) {
-                g_object_unref (manager->priv->seat.session_monitor);
+                sd_login_monitor_unref (manager->priv->seat.session_monitor);
         }
 
         if (manager->priv->seat.session_monitor_stream != NULL) {
