@@ -86,6 +86,7 @@ typedef struct
 #ifdef WITH_SYSTEMD
         sd_login_monitor            *session_monitor;
         GInputStream                *session_monitor_stream;
+        guint                        session_monitor_source_id;
 #endif
 } ActUserManagerSeat;
 
@@ -1744,7 +1745,7 @@ _monitor_for_systemd_session_changes (ActUserManager *manager)
                                on_session_monitor_event,
                                manager,
                                NULL);
-        g_source_attach (source, NULL);
+        manager->priv->seat.session_monitor_source_id = g_source_attach (source, NULL);
         g_source_unref (source);
 }
 #endif
@@ -2577,6 +2578,10 @@ act_user_manager_finalize (GObject *object)
 
         if (manager->priv->seat.session_monitor_stream != NULL) {
                 g_object_unref (manager->priv->seat.session_monitor_stream);
+        }
+
+        if (manager->priv->seat.session_monitor_source_id != 0) {
+                g_source_remove (manager->priv->seat.session_monitor_source_id);
         }
 #endif
 
