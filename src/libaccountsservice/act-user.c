@@ -461,6 +461,7 @@ act_user_init (ActUser *user)
 {
         GError *error = NULL;
 
+        user->local_account = TRUE;
         user->user_name = NULL;
         user->real_name = NULL;
         user->sessions = NULL;
