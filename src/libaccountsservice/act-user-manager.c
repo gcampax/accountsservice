@@ -53,6 +53,18 @@
 #include "ck-seat-generated.h"
 #include "ck-session-generated.h"
 
+/**
+ * SECTION:act-user-manager
+ * @title: ActUserManager
+ * @short_description: manages ActUser objects
+ *
+ * ActUserManager is a manager object that gives access to user
+ * creation, deletion, enumeration, etc.
+ *
+ * There is typically a singleton ActUserManager object, which
+ * can be obtained by act_user_manager_get_default().
+ */
+
 #define ACT_USER_MANAGER_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), ACT_TYPE_USER_MANAGER, ActUserManagerPrivate))
 
 #define CK_NAME      "org.freedesktop.ConsoleKit"

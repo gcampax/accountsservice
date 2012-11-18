@@ -141,6 +141,16 @@ AC_SUBST(WARN_CFLAGS)
 AC_CHECK_HEADERS([shadow.h utmpx.h])
 
 dnl ---------------------------------------------------------------------------
+dnl - gtk-doc Documentation
+dnl ---------------------------------------------------------------------------
+
+m4_ifdef([GTK_DOC_CHECK], [
+GTK_DOC_CHECK([1.15], [--flavour no-tmpl])
+],[
+AM_CONDITIONAL([ENABLE_GTK_DOC],[false])
+])
+
+dnl ---------------------------------------------------------------------------
 dnl - DocBook Documentation
 dnl ---------------------------------------------------------------------------
 
@@ -241,6 +251,7 @@ src/libaccountsservice/accountsservice.pc
 doc/Makefile
 doc/dbus/Makefile
 doc/dbus/AccountsService.xml
+doc/libaccountsservice/Makefile
 ])
 AC_OUTPUT
 
