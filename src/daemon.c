@@ -207,7 +207,7 @@ daemon_local_user_is_excluded (Daemon *daemon, const gchar *username, const gcha
 #ifdef HAVE_UTMPX_H
 
 typedef struct {
-        int frequency;
+        guint64 frequency;
         gint64 time;
         GList *previous_logins;
 } UserAccounting;
