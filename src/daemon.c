@@ -411,7 +411,7 @@ entry_generator_cachedir (GHashTable *users,
 
         /* First iteration */
         if (*state == NULL) {
-                *state = dir = g_dir_open (USERDIR, 0, &error);
+                *state = g_dir_open (USERDIR, 0, &error);
                 if (error != NULL) {
                         if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT))
                                 g_warning ("couldn't list user cache directory: %s", USERDIR);
