@@ -440,7 +440,7 @@ entry_generator_cachedir (GHashTable *users,
                 if (regular) {
                         pwent = getpwnam (name);
                         if (pwent == NULL)
-                                g_debug ("user '%s' in cache dir but not presen on system", name);
+                                g_debug ("user '%s' in cache dir but not present on system", name);
                         else
                                 return pwent;
                 }
