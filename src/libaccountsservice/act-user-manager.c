@@ -2065,6 +2065,33 @@ act_user_manager_get_user (ActUserManager *manager,
         return user;
 }
 
+/**
+ * act_user_manager_get_user_by_id:
+ * @manager: the manager to query.
+ * @id: the uid of the user to get.
+ *
+ * Retrieves a pointer to the #ActUser object for the user with the
+ * given uid from @manager. Trying to use this object before its
+ * #ActUser:is-loaded property is %TRUE will result in undefined
+ * behavior.
+ *
+ * Returns: (transfer none): #ActUser object
+ */
+ActUser *
+act_user_manager_get_user_by_id (ActUserManager *manager,
+                                 uid_t           id)
+{
+        ActUser *user;
+        gchar  *object_path;
+
+        g_return_val_if_fail (ACT_IS_USER_MANAGER (manager), NULL);
+
+        object_path = g_strdup_printf ("/org/freedesktop/Accounts/User%ld", id);
+        user = add_new_user_for_object_path (object_path, manager);
+        g_free (object_path);
+        return user;
+}
+
 static void
 listify_hash_values_hfunc (gpointer key,
                            gpointer value,
