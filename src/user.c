@@ -396,7 +396,7 @@ save_extra_data (User *user)
         error = NULL;
         data = g_key_file_to_data (keyfile, NULL, &error);
         if (error == NULL) {
-                filename = g_build_filename ("/var/lib/AccountsService/users",
+                filename = g_build_filename (USERDIR,
                                              user->user_name,
                                              NULL);
                 g_file_set_contents (filename, data, -1, &error);
@@ -417,9 +417,9 @@ move_extra_data (const gchar *old_name,
         gchar *old_filename;
         gchar *new_filename;
 
-        old_filename = g_build_filename ("/var/lib/AccountsService/users",
+        old_filename = g_build_filename (USERDIR,
                                          old_name, NULL);
-        new_filename = g_build_filename ("/var/lib/AccountsService/users",
+        new_filename = g_build_filename (USERDIR,
                                          new_name, NULL);
 
         g_rename (old_filename, new_filename);
