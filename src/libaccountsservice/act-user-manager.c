@@ -676,7 +676,7 @@ add_session_for_user (ActUserManager *manager,
 {
         g_hash_table_insert (manager->priv->sessions,
                              g_strdup (ssid),
-                             g_strdup (act_user_get_user_name (user)));
+                             g_object_ref (user));
 
         _act_user_add_session (user, ssid);
         g_debug ("ActUserManager: added session for user: %s", act_user_get_user_name (user));
@@ -1548,12 +1548,7 @@ _remove_session (ActUserManager *manager,
         /* since the session object may already be gone
          * we can't query CK directly */
 
-        username = g_hash_table_lookup (manager->priv->sessions, session_id);
-        if (username == NULL) {
-                return;
-        }
-
-        user = lookup_user_by_name (manager, username);
+        user = g_hash_table_lookup (manager->priv->sessions, session_id);
 
         if (user == NULL) {
                 /* nothing to do */
@@ -2488,7 +2483,7 @@ act_user_manager_init (ActUserManager *manager)
         manager->priv->sessions = g_hash_table_new_full (g_str_hash,
                                                          g_str_equal,
                                                          g_free,
-                                                         g_free);
+                                                         g_object_unref);
 
         /* users */
         manager->priv->normal_users_by_name = g_hash_table_new_full (g_str_hash,
