@@ -1517,7 +1517,6 @@ _remove_session (ActUserManager *manager,
 {
         ActUser       *user;
         GSList        *found;
-        char          *username;
 
         g_debug ("ActUserManager: Session removed: %s", session_id);
 
@@ -1561,7 +1560,7 @@ _remove_session (ActUserManager *manager,
                 return;
         }
 
-        g_debug ("ActUserManager: Session removed for %s", username);
+        g_debug ("ActUserManager: Session removed for %s", act_user_get_user_name (user));
         _act_user_remove_session (user, session_id);
 }
 
