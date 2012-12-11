@@ -860,15 +860,16 @@ on_new_user_loaded (ActUser        *user,
 
         old_user = lookup_user_by_name (manager, username);
 
-        /* If username got added earlier by a different means, trump it now.
+        /* If username hasn't been added, yet, add it now
          */
-        if (old_user != NULL) {
-                g_debug ("ActUserManager: user '%s' was already known, "
-                         "replacing with freshly loaded object", username);
-                remove_user (manager, old_user);
+        if (old_user == NULL) {
+                g_debug ("ActUserManager: %s was not yet known, adding it",
+                         describe_user (user));
+                add_user (manager, user);
+        } else {
+                _act_user_load_from_user (old_user, user);
         }
 
-        add_user (manager, user);
         g_object_unref (user);
 
 out:
