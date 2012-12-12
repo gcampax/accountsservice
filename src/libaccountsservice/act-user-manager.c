@@ -2761,6 +2761,17 @@ act_user_manager_get_default (void)
         return ACT_USER_MANAGER (user_manager_object);
 }
 
+/**
+ * act_user_manager_no_service:
+ * @manager: a #ActUserManager
+ *
+ * Returns: whether or not accounts service is running
+ */
+gboolean
+act_user_manager_no_service (ActUserManager *manager)
+{
+       return manager->priv->accounts_proxy == NULL;
+}
 
 /**
  * act_user_manager_create_user:
