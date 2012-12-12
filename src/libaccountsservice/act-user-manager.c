@@ -1450,29 +1450,10 @@ get_x11_display_for_new_session (ActUserManagerNewSession *new_session)
                                                   new_session);
 }
 
-static gboolean
-get_pwent_for_uid (uid_t           uid,
-                   struct passwd **pwentp)
-{
-        struct passwd *pwent;
-
-        do {
-                errno = 0;
-                pwent = getpwuid (uid);
-        } while (pwent == NULL && errno == EINTR);
-
-        if (pwentp != NULL) {
-                *pwentp = pwent;
-        }
-
-        return (pwent != NULL);
-}
-
 static void
 maybe_add_new_session (ActUserManagerNewSession *new_session)
 {
         ActUserManager *manager;
-        struct passwd  *pwent;
         ActUser        *user;
 
         manager = ACT_USER_MANAGER (new_session->manager);
@@ -1487,23 +1468,9 @@ maybe_add_new_session (ActUserManagerNewSession *new_session)
                 goto done;
         }
 
-        errno = 0;
-        get_pwent_for_uid (new_session->uid, &pwent);
-        if (pwent == NULL) {
-                g_warning ("Unable to lookup user ID %d: %s",
-                           (int) new_session->uid, g_strerror (errno));
-                goto failed;
-        }
-
-        /* check exclusions up front */
-        if (username_in_exclude_list (manager, pwent->pw_name)) {
-                g_debug ("ActUserManager: excluding user '%s'", pwent->pw_name);
-                goto failed;
-        }
-
-        user = act_user_manager_get_user (manager, pwent->pw_name);
+        user = act_user_manager_get_user_by_id (manager, new_session->uid);
         if (user == NULL) {
-                return;
+                goto failed;
         }
 
         add_session_for_user (manager, user, new_session->id);
