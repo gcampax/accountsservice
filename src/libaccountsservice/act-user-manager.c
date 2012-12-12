@@ -529,6 +529,28 @@ act_user_manager_activate_user_session (ActUserManager *manager,
         return ret;
 }
 
+static const char *
+describe_user (ActUser *user)
+{
+        ActUserManagerFetchUserRequest *request;
+
+        if (act_user_is_loaded (user)) {
+                static char *description = NULL;
+                g_clear_pointer (&description, (GDestroyNotify) g_free);
+
+                description = g_strdup_printf ("user %s", act_user_get_user_name (user));
+                return description;
+        }
+
+        request = g_object_get_data (G_OBJECT (user), "fetch-user-request");
+
+        if (request != NULL) {
+                return request->description;
+        }
+
+        return "user";
+}
+
 static void
 on_user_sessions_changed (ActUser        *user,
                           ActUserManager *manager)
@@ -541,8 +563,8 @@ on_user_sessions_changed (ActUser        *user,
 
         nsessions = act_user_get_num_sessions (user);
 
-        g_debug ("ActUserManager: sessions changed user=%s num=%d",
-                 act_user_get_user_name (user),
+        g_debug ("ActUserManager: sessions changed (%s) num=%d",
+                 describe_user (user),
                  nsessions);
 
         /* only signal on zero and one */
@@ -558,8 +580,9 @@ on_user_changed (ActUser        *user,
                  ActUserManager *manager)
 {
         if (manager->priv->is_loaded) {
-                g_debug ("ActUserManager: user %s changed",
-                         act_user_get_user_name (user));
+                g_debug ("ActUserManager: %s changed",
+                         describe_user (user));
+
                 g_signal_emit (manager, signals[USER_CHANGED], 0, user);
         }
 }
@@ -689,7 +712,7 @@ add_session_for_user (ActUserManager *manager,
                              g_object_ref (user));
 
         _act_user_add_session (user, ssid);
-        g_debug ("ActUserManager: added session for user: %s", act_user_get_user_name (user));
+        g_debug ("ActUserManager: added session for %s", describe_user (user));
 }
 
 static void
@@ -820,8 +843,8 @@ on_new_user_loaded (ActUser        *user,
         ActUser *old_user;
 
         if (!act_user_is_loaded (user)) {
-                g_debug ("ActUserManager: user '%s' loaded function called when not loaded",
-                         act_user_get_user_name (user));
+                g_debug ("ActUserManager: %s loaded function called when not loaded",
+                         describe_user (user));
                 return;
         }
         g_signal_handlers_disconnect_by_func (user, on_new_user_loaded, manager);
@@ -839,18 +862,20 @@ on_new_user_loaded (ActUser        *user,
                 object_path = act_user_get_object_path (user);
 
                 if (object_path != NULL) {
-                        g_warning ("ActUserManager: user has no username "
+                        g_warning ("ActUserManager: %s has no username "
                                    "(object path: %s, uid: %d)",
+                                   describe_user (user),
                                    object_path, (int) act_user_get_uid (user));
                 } else {
-                        g_warning ("ActUserManager: user has no username (uid: %d)",
+                        g_warning ("ActUserManager: %s has no username (uid: %d)",
+                                   describe_user (user),
                                    (int) act_user_get_uid (user));
                 }
                 g_object_unref (user);
                 goto out;
         }
 
-        g_debug ("ActUserManager: user '%s' is now loaded", username);
+        g_debug ("ActUserManager: %s is now loaded", describe_user (user));
 
         if (username_in_exclude_list (manager, username)) {
                 g_debug ("ActUserManager: excluding user '%s'", username);
@@ -890,8 +915,8 @@ add_new_user_for_object_path (const char     *object_path,
         user = g_hash_table_lookup (manager->priv->users_by_object_path, object_path); 
 
         if (user != NULL) {
-                g_debug ("ActUserManager: tracking existing user %s with object path %s",
-                         act_user_get_user_name (user), object_path);
+                g_debug ("ActUserManager: tracking existing %s with object path %s",
+                         describe_user (user), object_path);
                 return user;
         }
 
@@ -1576,7 +1601,7 @@ _remove_session (ActUserManager *manager,
                 return;
         }
 
-        g_debug ("ActUserManager: Session removed for %s", act_user_get_user_name (user));
+        g_debug ("ActUserManager: Session removed for %s", describe_user (user));
         _act_user_remove_session (user, session_id);
 }
 
@@ -1941,6 +1966,8 @@ free_fetch_user_request (ActUserManagerFetchUserRequest *request)
 
         manager = request->manager;
 
+        g_object_set_data (G_OBJECT (request->user), "fetch-user-request", NULL);
+
         manager->priv->fetch_user_requests = g_slist_remove (manager->priv->fetch_user_requests, request);
         if (request->type == ACT_USER_MANAGER_FETCH_USER_FROM_USERNAME_REQUEST) {
                 g_free (request->username);
@@ -2047,6 +2074,7 @@ fetch_user_with_username_from_accounts_service (ActUserManager *manager,
 
         manager->priv->fetch_user_requests = g_slist_prepend (manager->priv->fetch_user_requests,
                                                               request);
+        g_object_set_data (G_OBJECT (user), "fetch-user-request", request);
         fetch_user_incrementally (request);
 }
 
@@ -2068,6 +2096,7 @@ fetch_user_with_id_from_accounts_service (ActUserManager *manager,
 
         manager->priv->fetch_user_requests = g_slist_prepend (manager->priv->fetch_user_requests,
                                                               request);
+        g_object_set_data (G_OBJECT (user), "fetch-user-request", request);
         fetch_user_incrementally (request);
 }
 
