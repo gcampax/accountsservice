@@ -1120,7 +1120,7 @@ collect_props (const gchar *key,
                 GVariant *new_login_history = value;
 
                 if (user->login_history == NULL ||
-                    !g_variant_compare (user->login_history, new_login_history)) {
+                    !g_variant_equal (user->login_history, new_login_history)) {
                         if (user->login_history)
                           g_variant_unref (user->login_history);
                         user->login_history = g_variant_ref (new_login_history);
@@ -1375,7 +1375,7 @@ _act_user_load_from_user (ActUser    *user,
         user->login_time = user_to_copy->login_time;
         g_object_notify (G_OBJECT (user), "login-time");
 
-        user->login_history = g_variant_ref (user_to_copy->login_history);
+        user->login_history = user_to_copy->login_history ? g_variant_ref (user_to_copy->login_history) : NULL;
         g_object_notify (G_OBJECT (user), "login-history");
 
         user->account_type = user_to_copy->account_type;
