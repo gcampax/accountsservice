@@ -4,9 +4,6 @@ INCLUDES = 			\
 	-DDATADIR=\""$(datadir)"\" \
 	-DICONDIR=\"$(localstatedir)/lib/AccountsService/icons\" \
 	-DUSERDIR=\"$(localstatedir)/lib/AccountsService/users\" \
-	$(DBUS_GLIB_CFLAGS) 	\
-	$(GIO_CFLAGS)	 	\
-	$(GLIB_CFLAGS)		\
 	$(POLKIT_CFLAGS)	\
 	$(WARN_CFLAGS)
 
@@ -37,9 +34,6 @@ accounts_daemon_SOURCES = 	\
 	main.c
 
 accounts_daemon_LDADD = 	\
-	$(DBUS_GLIB_LIBS) 	\
-	$(GIO_LIBS)		\
-	$(GLIB_LIBS)		\
 	$(POLKIT_LIBS)
 
 CLEANFILES = $(BUILT_SOURCES)
