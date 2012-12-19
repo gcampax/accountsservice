@@ -1,17 +1,25 @@
+NULL =
+BUILT_SOURCES =
 SUBDIRS = . libaccountsservice
 INCLUDES = 			\
 	-DLOCALSTATEDIR=\""$(localstatedir)"\" \
 	-DDATADIR=\""$(datadir)"\" \
 	-DICONDIR=\"$(localstatedir)/lib/AccountsService/icons\" \
 	-DUSERDIR=\"$(localstatedir)/lib/AccountsService/users\" \
+	-I$(srcdir)		\
+	-I$(builddir)		\
 	$(POLKIT_CFLAGS)	\
 	$(WARN_CFLAGS)
 
-BUILT_SOURCES = 			\
-	accounts-generated.c			\
-	accounts-generated.h			\
+noinst_LTLIBRARIES = libaccounts-generated.la
+
+libaccounts_generated_la_SOURCES = \
+	accounts-generated.c		\
+	accounts-generated.h		\
 	accounts-user-generated.c	\
-	accounts-user-generated.h
+	accounts-user-generated.h	\
+	$(NULL)
+BUILT_SOURCES += $(libaccounts_generated_la_SOURCES)
 
 accounts-generated.c accounts-generated.h: $(top_srcdir)/data/org.freedesktop.Accounts.xml Makefile
 	gdbus-codegen --generate-c-code accounts-generated --c-namespace Accounts --interface-prefix=org.freedesktop. $(top_srcdir)/data/org.freedesktop.Accounts.xml
@@ -23,7 +31,6 @@ libexec_PROGRAMS = accounts-daemon
 
 accounts_daemon_SOURCES = 	\
 	$(enums_h_sources)	\
-	$(BUILT_SOURCES)	\
 	types.h			\
 	daemon.h		\
 	daemon.c		\
@@ -34,6 +41,7 @@ accounts_daemon_SOURCES = 	\
 	main.c
 
 accounts_daemon_LDADD = 	\
+	libaccounts-generated.la	\
 	$(POLKIT_LIBS)
 
 CLEANFILES = $(BUILT_SOURCES)

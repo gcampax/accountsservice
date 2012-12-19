@@ -35,12 +35,6 @@ act-user-enum-types.c: act-user.h act-user-manager.h act-user-enum-types.h
 	          --vtail "      { 0, NULL, NULL }\n    };\n    etype = g_@type@_register_static (\"@EnumName@\", values);\n  }\n  return etype;\n}\n" \
 	         $^ ) > $@
 
-accounts-generated.c accounts-generated.h: $(top_srcdir)/data/org.freedesktop.Accounts.xml Makefile
-	$(AM_V_GEN) gdbus-codegen --generate-c-code accounts-generated --c-namespace Accounts --interface-prefix=org.freedesktop. $(top_srcdir)/data/org.freedesktop.Accounts.xml
-
-accounts-user-generated.c accounts-user-generated.h: $(top_srcdir)/data/org.freedesktop.Accounts.User.xml Makefile
-	$(AM_V_GEN) gdbus-codegen --generate-c-code accounts-user-generated --c-namespace Accounts --interface-prefix=org.freedesktop.Accounts. $(top_srcdir)/data/org.freedesktop.Accounts.User.xml
-
 ck-manager-generated.c ck-manager-generated.h: org.freedesktop.ConsoleKit.Manager.xml Makefile
 	$(AM_V_GEN) gdbus-codegen --generate-c-code ck-manager-generated --c-namespace ConsoleKit --interface-prefix=org.freedesktop.ConsoleKit $(srcdir)/org.freedesktop.ConsoleKit.Manager.xml
 
@@ -51,10 +45,6 @@ ck-session-generated.c ck-session-generated.h: org.freedesktop.ConsoleKit.Sessio
 	$(AM_V_GEN) gdbus-codegen --generate-c-code ck-session-generated --c-namespace ConsoleKit --interface-prefix=org.freedesktop.ConsoleKit $(srcdir)/org.freedesktop.ConsoleKit.Session.xml
 
 BUILT_SOURCES += \
-	accounts-generated.c			\
-	accounts-generated.h			\
-	accounts-user-generated.c	\
-	accounts-user-generated.h	\
 	act-user-enum-types.c	\
 	act-user-enum-types.h	\
 	ck-manager-generated.c		\
@@ -87,6 +77,7 @@ libaccountsservice_la_LDFLAGS =                                               \
         $(END_OF_LIST)
 
 libaccountsservice_la_LIBADD =                                                \
+	../libaccounts-generated.la						\
         $(LIBACCOUNTSSERVICE_LIBS)                                            \
         -lcrypt                                                               \
         $(END_OF_LIST)
