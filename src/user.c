@@ -315,7 +315,7 @@ user_update_from_keyfile (User     *user,
         if (s != NULL) {
                 g_free (user->x_session);
                 user->x_session = s;
-                g_object_notify (G_OBJECT (user), "x-session");
+                g_object_notify (G_OBJECT (user), "xsession");
         }
 
         s = g_key_file_get_string (keyfile, "User", "Email", NULL);
