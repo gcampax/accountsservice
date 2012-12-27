@@ -41,6 +41,9 @@
 #include <gio/gunixinputstream.h>
 #include <polkit/polkit.h>
 
+#define GCR_API_SUBJECT_TO_CHANGE
+#include <gcr/gcr-base.h>
+
 #include "daemon.h"
 #include "user.h"
 #include "accounts-user-generated.h"
@@ -77,6 +80,8 @@ struct User {
         gchar *object_path;
 
         Daemon       *daemon;
+
+        GHashTable *secret_exchanges;
 
         uid_t         uid;
         gid_t         gid;
@@ -1663,6 +1668,182 @@ user_set_password (AccountsUser          *auser,
 }
 
 static void
+user_continue_change_password_authorized_cb (Daemon                *daemon,
+                                             User                  *user,
+                                             GDBusMethodInvocation *context,
+                                             gpointer               data)
+
+{
+        GVariant *passwords = data;
+        GVariantIter iter;
+        GcrSecretExchange *exchange;
+        GError *error;
+        const gchar *argv[6];
+        unsigned int type;
+        const char *encrypted_password;
+        char *password_hint, *password;
+        char *stdin;
+
+        sys_log (context, "change password of user '%s' (%d)",
+                 user->user_name, user->uid);
+
+        exchange = g_hash_table_lookup (user->secret_exchanges,
+                                        g_dbus_method_invocation_get_sender (context));
+        g_object_ref (exchange);
+        g_hash_table_remove (user->secret_exchanges, g_dbus_method_invocation_get_sender (context));
+
+        if (exchange == NULL) {
+                /* The caller never called BeginSetPassword */
+                throw_error (context, ERROR_INVALID, "secret exchange not initialized");
+                return;
+        }
+
+        g_object_freeze_notify (G_OBJECT (user));
+
+        password_hint = NULL;
+        password = NULL;
+        g_variant_iter_init (&iter, passwords);
+        while (g_variant_iter_next (&iter, "(u&s)", &type, &encrypted_password)) {
+                if (!gcr_secret_exchange_receive (exchange, encrypted_password)) {
+                        throw_error (context, ERROR_INVALID, "could not decrypt password");
+                        goto out;
+                }
+
+                switch (type) {
+                case 0:
+                        g_free (password);
+                        password = g_strdup (gcr_secret_exchange_get_secret (exchange, NULL));
+                        break;
+                case 1:
+                        g_free (password_hint);
+                        password_hint = g_strdup (gcr_secret_exchange_get_secret (exchange, NULL));
+                        break;
+
+                default:
+                        throw_error (context, ERROR_INVALID, "invalid password type");
+                        goto out;
+                }
+        }
+
+        argv[0] = LIBEXECDIR "/accounts-daemon-pam-password-helper";
+        argv[1] = user->user_name;
+        argv[2] = NULL;
+
+        stdin = build_pam_helper_stdin (password);
+        error = NULL;
+
+        if (!spawn_with_login_uid_and_stdin (context, argv, stdin, &error)) {
+                throw_error (context, ERROR_FAILED, "running '%s' failed: %s", argv[0], error->message);
+                goto out;
+        }
+
+        if (user->password_mode != PASSWORD_MODE_REGULAR) {
+                user->password_mode = PASSWORD_MODE_REGULAR;
+                g_object_notify (G_OBJECT (user), "password-mode");
+        }
+
+        if (user->locked) {
+                user->locked = FALSE;
+                g_object_notify (G_OBJECT (user), "locked");
+        }
+
+        if (password_hint != NULL &&
+            g_strcmp0 (user->password_hint, password_hint) != 0) {
+                g_free (user->password_hint);
+                /* An empty password hint means no password hint */
+                if (*password_hint)
+                        user->password_hint = g_strdup (password_hint);
+                else
+                        user->password_hint = NULL;
+                g_object_notify (G_OBJECT (user), "password-hint");
+        }
+
+        save_extra_data (user);
+
+        accounts_user_emit_changed (ACCOUNTS_USER (user));
+
+        accounts_user_complete_continue_set_password (ACCOUNTS_USER (user), context);
+
+ out:
+        g_free (password_hint);
+        g_free (password);
+        g_object_thaw_notify (G_OBJECT (user));
+        g_object_unref (exchange);
+}
+
+static gboolean
+user_continue_set_password (AccountsUser          *auser,
+                            GDBusMethodInvocation *context,
+                            GVariant              *passwords)
+{
+        User *user = (User*)auser;
+
+        daemon_local_check_auth (user->daemon,
+                                 user,
+                                 "org.freedesktop.accounts.user-administration",
+                                 TRUE,
+                                 user_continue_change_password_authorized_cb,
+                                 context,
+                                 g_variant_ref (passwords),
+                                 (GDestroyNotify)g_variant_unref);
+
+        return TRUE;
+}
+
+static void
+on_name_vanished (GDBusConnection *connection,
+                  const gchar     *name,
+                  gpointer         user_data)
+{
+        User *user = USER (user_data);
+
+        g_hash_table_remove (user->secret_exchanges, name);
+}
+
+static void
+on_exchange_unreffed (gpointer  user_data,
+                      GObject  *object)
+{
+        g_bus_unwatch_name (GPOINTER_TO_INT (user_data));
+}
+
+static gboolean
+user_begin_set_password (AccountsUser          *auser,
+                         GDBusMethodInvocation *context)
+{
+        User *user = (User*)auser;
+        const char *who;
+        GcrSecretExchange *exchange;
+        char *begin_str;
+        int name_id;
+
+        who = g_dbus_method_invocation_get_sender (context);
+        exchange = g_hash_table_lookup (user->secret_exchanges, who);
+
+        if (exchange != NULL) {
+                throw_error (context, ERROR_INVALID, "secret exchange already in progress");
+                return TRUE;
+        }
+
+        exchange = gcr_secret_exchange_new (GCR_SECRET_EXCHANGE_PROTOCOL_1);
+        g_hash_table_insert (user->secret_exchanges, g_strdup (who), exchange);
+
+        name_id = g_bus_watch_name (G_BUS_TYPE_SYSTEM, who,
+                                    G_BUS_NAME_WATCHER_FLAGS_NONE,
+                                    NULL, /* name appeared */
+                                    on_name_vanished,
+                                    auser, /* weak ref */
+                                    NULL);
+        g_object_weak_ref (G_OBJECT (exchange), on_exchange_unreffed, GINT_TO_POINTER (name_id));
+
+        begin_str = gcr_secret_exchange_begin (exchange);
+        accounts_user_complete_begin_set_password (auser, context, begin_str);
+        g_free (begin_str);
+
+        return TRUE;
+}
+
+static void
 user_change_automatic_login_authorized_cb (Daemon                *daemon,
                                            User                  *user,
                                            GDBusMethodInvocation *context,
@@ -1830,6 +2011,8 @@ user_finalize (GObject *object)
         User *user;
 
         user = USER (object);
+
+        g_hash_table_unref (user->secret_exchanges);
 
         g_free (user->object_path);
         g_free (user->user_name);
@@ -2001,6 +2184,8 @@ user_accounts_user_iface_init (AccountsUserIface *iface)
         iface->handle_set_location = user_set_location;
         iface->handle_set_locked = user_set_locked;
         iface->handle_set_password = user_set_password;
+        iface->handle_continue_set_password = user_continue_set_password;
+        iface->handle_begin_set_password = user_begin_set_password;
         iface->handle_set_password_mode = user_set_password_mode;
         iface->handle_set_real_name = user_set_real_name;
         iface->handle_set_shell = user_set_shell;
@@ -2032,6 +2217,10 @@ user_init (User *user)
 {
         user->system_bus_connection = NULL;
         user->object_path = NULL;
+
+        user->secret_exchanges = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                        g_free, g_object_unref);
+
         user->user_name = NULL;
         user->real_name = NULL;
         user->account_type = ACCOUNT_TYPE_STANDARD;

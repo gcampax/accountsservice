@@ -46,6 +46,11 @@ typedef enum {
         ACT_USER_PASSWORD_MODE_NONE,
 } ActUserPasswordMode;
 
+typedef enum {
+        ACT_USER_PASSWORD_REGULAR,
+        ACT_USER_PASSWORD_HINT
+} ActUserPasswordType;
+
 typedef struct _ActUser ActUser;
 typedef struct _ActUserClass ActUserClass;
 
@@ -103,6 +108,8 @@ void           act_user_set_account_type          (ActUser    *user,
 void           act_user_set_password              (ActUser     *user,
                                                    const gchar *password,
                                                    const gchar *hint);
+void           act_user_set_multiple_passwords    (ActUser     *user,
+                                                   GHashTable  *password_map);
 void           act_user_set_password_mode         (ActUser             *user,
                                                    ActUserPasswordMode  password_mode);
 void           act_user_set_locked                (ActUser    *user,

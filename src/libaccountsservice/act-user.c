@@ -30,6 +30,9 @@
 #include <glib/gi18n.h>
 #include <gio/gio.h>
 
+#define GCR_API_SUBJECT_TO_CHANGE
+#include <gcr/gcr-base.h>
+
 #include "act-user-private.h"
 #include "accounts-user-generated.h"
 
@@ -1839,6 +1842,71 @@ act_user_set_password (ActUser             *user,
                 g_warning ("SetPassword call failed: %s", error->message);
                 g_error_free (error);
         }
+}
+
+/**
+ * act_user_set_multiple_passwords:
+ * @user: the user object to alter.
+ * @password_map: (element-type guint utf8): a #GHashTable mapping
+ *                #ActUserPasswordType to a plain-text password
+ *
+ * Changes password and password hint of @user, using the
+ * values taken from @password_map.
+ *
+ * Note this function is synchronous and ignores errors.
+ **/
+/* Note on the API: what we really want here is a list of (int-string)
+   values, but short of passing #GVariants (which is ugly), we can't
+   do that in a introspectable way without a boxed struct
+*/
+void
+act_user_set_multiple_passwords (ActUser             *user,
+                                 GHashTable          *password_map)
+{
+        GError *error = NULL;
+        GcrSecretExchange *exchange;
+        GHashTableIter iter;
+        GVariantBuilder builder;
+        char *exchange_begin;
+        gpointer key, value;
+
+        g_return_if_fail (ACT_IS_USER (user));
+        g_return_if_fail (password_map != NULL);
+        g_return_if_fail (ACCOUNTS_IS_USER (user->accounts_proxy));
+
+        if (!accounts_user_call_begin_set_password_sync (user->accounts_proxy,
+                                                         &exchange_begin,
+                                                         NULL, &error)) {
+                g_warning ("BeginSetPassword call failed: %s", error->message);
+                g_error_free (error);
+                return;
+        }
+
+        exchange = gcr_secret_exchange_new (GCR_SECRET_EXCHANGE_PROTOCOL_1);
+        gcr_secret_exchange_receive (exchange, exchange_begin);
+        g_free (exchange_begin);
+
+        g_variant_builder_init (&builder, G_VARIANT_TYPE ("a(us)"));
+        g_hash_table_iter_init (&iter, password_map);
+        while (g_hash_table_iter_next (&iter, &key, &value)) {
+                char *next_str;
+
+                next_str = gcr_secret_exchange_send (exchange, value, -1);
+                g_variant_builder_add (&builder, "(us)",
+                                       GPOINTER_TO_INT (key),
+                                       next_str);
+                g_free (next_str);
+        }
+
+        if (!accounts_user_call_continue_set_password_sync (user->accounts_proxy,
+                                                            g_variant_builder_end (&builder),
+                                                            NULL,
+                                                            &error)) {
+                g_warning ("ContinueSetPassword call failed: %s", error->message);
+                g_error_free (error);
+        }
+
+        g_object_unref (exchange);
 }
 
 /**

@@ -13,6 +13,7 @@ INCLUDES = 			\
 	$(GIO_CFLAGS)	 	\
 	$(GLIB_CFLAGS)		\
 	$(POLKIT_CFLAGS)	\
+	$(GCR_CFLAGS)		\
 	$(WARN_CFLAGS)
 
 noinst_LTLIBRARIES = libaccounts-generated.la
@@ -46,6 +47,7 @@ accounts_daemon_SOURCES = 	\
 
 accounts_daemon_LDADD = 	\
 	libaccounts-generated.la	\
+	$(GCR_LIBS)			\
 	$(POLKIT_LIBS)
 
 accounts_daemon_pam_password_helper_SOURCES = \

@@ -126,7 +126,8 @@ static const GDBusErrorEntry accounts_error_entries[] =
         { ERROR_USER_EXISTS, "org.freedesktop.Accounts.Error.UserExists" },
         { ERROR_USER_DOES_NOT_EXIST, "org.freedesktop.Accounts.Error.UserDoesNotExist" },
         { ERROR_PERMISSION_DENIED, "org.freedesktop.Accounts.Error.PermissionDenied" },
-        { ERROR_NOT_SUPPORTED, "org.freedesktop.Accounts.Error.NotSupported" }
+        { ERROR_NOT_SUPPORTED, "org.freedesktop.Accounts.Error.NotSupported" },
+        { ERROR_INVALID, "org.freedesktop.Accounts.Error.InvalidArguments" },
 };
 
 GQuark
@@ -157,6 +158,7 @@ error_get_type (void)
           ENUM_ENTRY (ERROR_USER_DOES_NOT_EXIST, "UserDoesntExist"),
           ENUM_ENTRY (ERROR_PERMISSION_DENIED, "PermissionDenied"),
           ENUM_ENTRY (ERROR_NOT_SUPPORTED, "NotSupported"),
+          ENUM_ENTRY (ERROR_INVALID, "InvalidArguments"),
           { 0, 0, 0 }
         };
       g_assert (NUM_ERRORS == G_N_ELEMENTS (values) - 1);

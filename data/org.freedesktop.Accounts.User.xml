@@ -460,7 +460,8 @@
     <arg name="password" direction="in" type="s">
       <doc:doc>
         <doc:summary>
-          The crypted password.
+          The plain-text password.
+          This method is deprecated and unsafe. Use BeginSetPassword instead.
         </doc:summary>
       </doc:doc>
     </arg>
@@ -493,6 +494,76 @@
       <doc:errors>
         <doc:error name="org.freedesktop.Accounts.Error.PermissionDenied">if the caller lacks the appropriate PolicyKit authorization</doc:error>
         <doc:error name="org.freedesktop.Accounts.Error.Failed">if the operation failed</doc:error>
+      </doc:errors>
+    </doc:doc>
+  </method>
+
+  <method name="BeginSetPassword">
+    <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+    <arg name="data" direction="out" type="s">
+      <doc:doc>
+        <doc:summary>
+          Unspecified opaque data that should be passed to gcr_secret_exchange_receive()
+        </doc:summary>
+      </doc:doc>
+    </arg>
+    <doc:doc>
+      <doc:description>
+        <doc:para>
+          Begins a #GcrSecretExchange to set the new password for this user.
+          The expected next step is a call to ContinueSetPassword with the encrypted
+          passwords.
+        </doc:para>
+        <doc:para>
+          Note that setting a password has the side-effect of
+          unlocking the account.
+        </doc:para>
+      </doc:description>
+      <doc:permission>
+        The caller does not need PolicyKit authorization, but the following ContinueSetPassword
+        might fail if the caller is not authorized.
+      </doc:permission>
+    </doc:doc>
+  </method>
+
+  <method name="ContinueSetPassword">
+    <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+    <arg name="passwords" direction="in" type="a(us)">
+      <annotation name="org.gtk.GDBus.C.ForceGVariant" value="true"/>
+      <doc:doc>
+        <doc:summary>
+          The encrypted passwords. Each password is a DBus struct holding
+          - an unsigned integer specifying the kind of data:
+            - 0 if the password is a regular password
+            - 1 if the password is a really a hint (not a secret)
+          - the result of calling gcr_secret_exchange_send(). The calls must
+            have been in the same order as they appear in the array.
+        </doc:summary>
+      </doc:doc>
+    </arg>
+    <doc:doc>
+      <doc:description>
+        <doc:para>
+          Sets a new password and hint for this user.
+        </doc:para>
+        <doc:para>
+          Note that setting a password has the side-effect of
+          unlocking the account.
+        </doc:para>
+      </doc:description>
+      <doc:permission>
+        The caller needs one of the following PolicyKit authorizations:
+        <doc:list>
+          <doc:item>
+            <doc:term>org.freedesktop.accounts.user-administration</doc:term>
+            <doc:definition>To change the password of a user</doc:definition>
+          </doc:item>
+        </doc:list>
+      </doc:permission>
+      <doc:errors>
+        <doc:error name="org.freedesktop.Accounts.Error.PermissionDenied">if the caller lacks the appropriate PolicyKit authorization</doc:error>
+        <doc:error name="org.freedesktop.Accounts.Error.Failed">if the operation failed</doc:error>
+        <doc:error name="org.freedesktop.Accounts.Error.InvalidArguments">if the caller did not call BeginSetPassword beforehand</doc:error>
       </doc:errors>
     </doc:doc>
   </method>

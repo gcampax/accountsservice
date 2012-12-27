@@ -57,6 +57,7 @@ typedef enum {
         ERROR_USER_DOES_NOT_EXIST,
         ERROR_PERMISSION_DENIED,
         ERROR_NOT_SUPPORTED,
+        ERROR_INVALID,
         NUM_ERRORS
 } Error;
 
