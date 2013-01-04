@@ -158,7 +158,10 @@ error_get_type (void)
 }
 
 gboolean
-daemon_local_user_is_excluded (Daemon *daemon, const gchar *username, const gchar *shell)
+daemon_local_user_is_excluded (Daemon      *daemon,
+                               const gchar *username,
+                               const gchar *shell,
+                               const gchar *password_hash)
 {
         int ret;
 
@@ -199,6 +202,28 @@ daemon_local_user_is_excluded (Daemon *daemon, const gchar *username, const gcha
                 g_free (basename);
                 g_free (nologin_basename);
                 g_free (false_basename);
+        }
+
+        if (password_hash != NULL) {
+                /* skip over the account-is-locked '!' prefix if present */
+                if (password_hash[0] == '!')
+                    password_hash++;
+
+                if (password_hash[0] != '\0') {
+                        /* modern hashes start with "$n$" */
+                        if (password_hash[0] == '$') {
+                                if (strlen (password_hash) < 4)
+                                    ret = TRUE;
+
+                        /* DES crypt is base64 encoded [./A-Za-z0-9]*
+                         */
+                        } else if (!g_ascii_isalnum (password_hash[0]) &&
+                                   password_hash[0] != '.' &&
+                                   password_hash[0] != '/') {
+                                ret = TRUE;
+                        }
+                }
+
         }
 
         return ret;
@@ -481,7 +506,7 @@ load_entries (Daemon             *daemon,
                         break;
 
                 /* Skip system users... */
-                if (daemon_local_user_is_excluded (daemon, pwent->pw_name, pwent->pw_shell)) {
+                if (daemon_local_user_is_excluded (daemon, pwent->pw_name, pwent->pw_shell, NULL)) {
                         g_debug ("skipping user: %s", pwent->pw_name);
                         continue;
                 }
@@ -1029,7 +1054,7 @@ finish_list_cached_users (gpointer user_data)
                         continue;
                 }
 
-                if (daemon_local_user_is_excluded (data->daemon, name, shell)) {
+                if (daemon_local_user_is_excluded (data->daemon, name, shell, NULL)) {
                         g_debug ("user %s %ld excluded\n", name, (long) uid);
                         continue;
                 }

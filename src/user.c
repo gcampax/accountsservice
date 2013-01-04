@@ -287,7 +287,8 @@ user_update_from_pwent (User          *user,
 
         user->system_account = daemon_local_user_is_excluded (user->daemon,
                                                               user->user_name,
-                                                              pwent->pw_shell);
+                                                              pwent->pw_shell,
+                                                              passwd);
 
         g_object_thaw_notify (G_OBJECT (user));
 
