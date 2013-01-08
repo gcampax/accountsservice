@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <security/pam_appl.h>
@@ -29,6 +30,7 @@
 #include <glib.h>
 
 static char *password;
+static char *pin;
 
 static int
 answer_pam_message (int                        num_msg,
@@ -52,7 +54,10 @@ answer_pam_message (int                        num_msg,
         */
         for (i = 0; i < num_msg; i++) {
                 if ((*msg)[i].msg_style == PAM_PROMPT_ECHO_OFF) {
-                        resps[i].resp = strdup(password);
+                        if (strcmp((*msg)[i].msg, "PIN") == 0)
+                                resps[i].resp = pin ? strdup(pin) : NULL;
+                        else
+                                resps[i].resp = strdup(password);
                 } else {
                         resps[i].resp = NULL;
                 }
@@ -130,6 +135,7 @@ main (int    argc,
 
         stdin = g_io_channel_unix_new (STDIN_FILENO);
         password = read_word (stdin, FALSE);
+        pin = read_word (stdin, TRUE);
         g_io_channel_unref (stdin);
 
         res = pam_start ("accountsservice", username,
@@ -147,6 +153,7 @@ main (int    argc,
         pam_end (pamh, res);
 
         g_free (password);
+        g_free (pin);
 
         return res == PAM_SUCCESS ? 0 : 2;
 }

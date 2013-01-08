@@ -1562,12 +1562,21 @@ user_set_password_mode (AccountsUser          *auser,
 }
 
 static char *
-build_pam_helper_stdin (const char *password)
+build_pam_helper_stdin (const char *password,
+                        const char *pin)
 {
-        char *encoded_password, *result;
+        char *encoded_pin, *encoded_password, *result;
 
         encoded_password = g_uri_escape_string (password, NULL, FALSE);
-        result = g_strdup_printf ("%s\n", encoded_password);
+
+        if (pin != NULL) {
+                encoded_pin = g_uri_escape_string (pin, NULL, FALSE);
+
+                result = g_strdup_printf ("%s\n%s\n", encoded_password, encoded_pin);
+                g_free (encoded_pin);
+        } else {
+                result = g_strdup_printf ("%s\n", encoded_password);
+        }
 
         g_free (encoded_password);
         return result;
@@ -1595,7 +1604,7 @@ user_change_password_authorized_cb (Daemon                *daemon,
         argv[1] = user->user_name;
         argv[2] = NULL;
 
-        stdin = build_pam_helper_stdin (strings[0]);
+        stdin = build_pam_helper_stdin (strings[0], NULL);
         error = NULL;
 
         if (!spawn_with_login_uid_and_stdin (context, argv, stdin, &error)) {
@@ -1681,7 +1690,7 @@ user_continue_change_password_authorized_cb (Daemon                *daemon,
         const gchar *argv[6];
         unsigned int type;
         const char *encrypted_password;
-        char *password_hint, *password;
+        char *password_hint, *password, *pin;
         char *stdin;
 
         sys_log (context, "change password of user '%s' (%d)",
@@ -1702,6 +1711,7 @@ user_continue_change_password_authorized_cb (Daemon                *daemon,
 
         password_hint = NULL;
         password = NULL;
+        pin = NULL;
         g_variant_iter_init (&iter, passwords);
         while (g_variant_iter_next (&iter, "(u&s)", &type, &encrypted_password)) {
                 if (!gcr_secret_exchange_receive (exchange, encrypted_password)) {
@@ -1718,6 +1728,10 @@ user_continue_change_password_authorized_cb (Daemon                *daemon,
                         g_free (password_hint);
                         password_hint = g_strdup (gcr_secret_exchange_get_secret (exchange, NULL));
                         break;
+                case 2:
+                        g_free (pin);
+                        pin = g_strdup (gcr_secret_exchange_get_secret (exchange, NULL));
+                        break;
 
                 default:
                         throw_error (context, ERROR_INVALID, "invalid password type");
@@ -1729,7 +1743,7 @@ user_continue_change_password_authorized_cb (Daemon                *daemon,
         argv[1] = user->user_name;
         argv[2] = NULL;
 
-        stdin = build_pam_helper_stdin (password);
+        stdin = build_pam_helper_stdin (password, pin);
         error = NULL;
 
         if (!spawn_with_login_uid_and_stdin (context, argv, stdin, &error)) {
@@ -1767,6 +1781,7 @@ user_continue_change_password_authorized_cb (Daemon                *daemon,
  out:
         g_free (password_hint);
         g_free (password);
+        g_free (pin);
         g_object_thaw_notify (G_OBJECT (user));
         g_object_unref (exchange);
 }

@@ -48,7 +48,8 @@ typedef enum {
 
 typedef enum {
         ACT_USER_PASSWORD_REGULAR,
-        ACT_USER_PASSWORD_HINT
+        ACT_USER_PASSWORD_HINT,
+        ACT_USER_PASSWORD_PIN
 } ActUserPasswordType;
 
 typedef struct _ActUser ActUser;

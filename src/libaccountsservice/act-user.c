@@ -1850,7 +1850,7 @@ act_user_set_password (ActUser             *user,
  * @password_map: (element-type guint utf8): a #GHashTable mapping
  *                #ActUserPasswordType to a plain-text password
  *
- * Changes password and password hint of @user, using the
+ * Changes password, password hint and PIN of @user, using the
  * values taken from @password_map.
  *
  * Note this function is synchronous and ignores errors.

@@ -536,6 +536,7 @@
           - an unsigned integer specifying the kind of data:
             - 0 if the password is a regular password
             - 1 if the password is a really a hint (not a secret)
+            - 2 if the password is a PIN
           - the result of calling gcr_secret_exchange_send(). The calls must
             have been in the same order as they appear in the array.
         </doc:summary>
@@ -544,7 +545,7 @@
     <doc:doc>
       <doc:description>
         <doc:para>
-          Sets a new password and hint for this user.
+          Sets a new password, hint and PIN for this user.
         </doc:para>
         <doc:para>
           Note that setting a password has the side-effect of
