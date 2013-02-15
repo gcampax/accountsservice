@@ -1583,100 +1583,6 @@ build_pam_helper_stdin (const char *password,
 }
 
 static void
-user_change_password_authorized_cb (Daemon                *daemon,
-                                    User                  *user,
-                                    GDBusMethodInvocation *context,
-                                    gpointer               data)
-
-{
-        gchar **strings = data;
-        GError *error;
-        const gchar *argv[6];
-        char *stdin;
-
-        sys_log (context,
-                 "set password and hint of user '%s' (%d)",
-                 user->user_name, user->uid);
-
-        g_object_freeze_notify (G_OBJECT (user));
-
-        argv[0] = LIBEXECDIR "/accounts-daemon-pam-password-helper";
-        argv[1] = user->user_name;
-        argv[2] = NULL;
-
-        stdin = build_pam_helper_stdin (strings[0], NULL);
-        error = NULL;
-
-        if (!spawn_with_login_uid_and_stdin (context, argv, stdin, &error)) {
-                throw_error (context, ERROR_FAILED, "running '%s' failed: %s", argv[0], error->message);
-                g_error_free (error);
-                g_free (stdin);
-                return;
-        }
-
-        g_free (stdin);
-
-        if (user->password_mode != PASSWORD_MODE_REGULAR) {
-                user->password_mode = PASSWORD_MODE_REGULAR;
-                g_object_notify (G_OBJECT (user), "password-mode");
-        }
-
-        if (user->locked) {
-                user->locked = FALSE;
-                g_object_notify (G_OBJECT (user), "locked");
-        }
-
-        if (g_strcmp0 (user->password_hint, strings[1]) != 0) {
-                g_free (user->password_hint);
-                user->password_hint = g_strdup (strings[1]);
-                g_object_notify (G_OBJECT (user), "password-hint");
-        }
-
-        save_extra_data (user);
-
-        g_object_thaw_notify (G_OBJECT (user));
-
-        accounts_user_emit_changed (ACCOUNTS_USER (user));
-
-        accounts_user_complete_set_password (ACCOUNTS_USER (user), context);
-}
-
-static void
-free_passwords (gchar **strings)
-{
-        memset (strings[0], 0, strlen (strings[0]));
-        g_strfreev (strings);
-}
-
-static gboolean
-user_set_password (AccountsUser          *auser,
-                   GDBusMethodInvocation *context,
-                   const gchar           *password,
-                   const gchar           *hint)
-{
-        User *user = (User*)auser;
-        gchar **data;
-
-        data = g_new (gchar *, 3);
-        data[0] = g_strdup (password);
-        data[1] = g_strdup (hint);
-        data[2] = NULL;
-
-        daemon_local_check_auth (user->daemon,
-                                 user,
-                                 "org.freedesktop.accounts.user-administration",
-                                 TRUE,
-                                 user_change_password_authorized_cb,
-                                 context,
-                                 data,
-                                 (GDestroyNotify)free_passwords);
-
-        memset ((char*)password, 0, strlen (password));
-
-        return TRUE;
-}
-
-static void
 user_continue_change_password_authorized_cb (Daemon                *daemon,
                                              User                  *user,
                                              GDBusMethodInvocation *context,
@@ -2198,7 +2104,6 @@ user_accounts_user_iface_init (AccountsUserIface *iface)
         iface->handle_set_language = user_set_language;
         iface->handle_set_location = user_set_location;
         iface->handle_set_locked = user_set_locked;
-        iface->handle_set_password = user_set_password;
         iface->handle_continue_set_password = user_continue_set_password;
         iface->handle_begin_set_password = user_begin_set_password;
         iface->handle_set_password_mode = user_set_password_mode;

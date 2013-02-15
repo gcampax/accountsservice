@@ -1827,21 +1827,20 @@ act_user_set_password (ActUser             *user,
                        const gchar         *password,
                        const gchar         *hint)
 {
-        GError *error = NULL;
-        gchar *crypted;
+        GHashTable *table;
 
         g_return_if_fail (ACT_IS_USER (user));
         g_return_if_fail (password != NULL);
-        g_return_if_fail (ACCOUNTS_IS_USER (user->accounts_proxy));
 
-        if (!accounts_user_call_set_password_sync (user->accounts_proxy,
-                                                   password,
-                                                   hint,
-                                                   NULL,
-                                                   &error)) {
-                g_warning ("SetPassword call failed: %s", error->message);
-                g_error_free (error);
-        }
+        table = g_hash_table_new (g_direct_hash, g_direct_equal);
+        g_hash_table_insert (table, GINT_TO_POINTER (ACT_USER_PASSWORD_REGULAR),
+                             (gpointer) password);
+        g_hash_table_insert (table, GINT_TO_POINTER (ACT_USER_PASSWORD_HINT),
+                             (gpointer) hint);
+
+        act_user_set_multiple_passwords (user, table);
+
+        g_hash_table_unref (table);
 }
 
 /**
