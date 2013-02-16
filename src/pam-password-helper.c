@@ -30,6 +30,7 @@
 #include <glib.h>
 
 static char *password;
+static char *old_password;
 static char *pin;
 
 static int
@@ -54,7 +55,11 @@ answer_pam_message (int                        num_msg,
         */
         for (i = 0; i < num_msg; i++) {
                 if ((*msg)[i].msg_style == PAM_PROMPT_ECHO_OFF) {
-                        if (strcmp((*msg)[i].msg, "PIN") == 0)
+                        const char *message = (*msg)[i].msg;
+
+                        if (old_password && strstr(message, "current") != NULL)
+                                resps[i].resp = strdup(old_password);
+                        else if (strcmp(message, "PIN") == 0)
                                 resps[i].resp = pin ? strdup(pin) : NULL;
                         else
                                 resps[i].resp = strdup(password);
@@ -98,7 +103,7 @@ read_word (GIOChannel *from,
                         g_printerr ("Generic error reading from standard input\n");
                 }
 
-                exit(1);
+                exit(PAM_AUTHTOK_ERR);
         }
 
         str[term_pos] = 0;
@@ -109,7 +114,7 @@ read_word (GIOChannel *from,
 
         if (decoded == NULL) {
                 g_printerr ("Failed to decode password (probably contained a NUL).\n");
-                exit(1);
+                exit(PAM_AUTHTOK_ERR);
         }
 
         g_free (str);
@@ -128,12 +133,17 @@ main (int    argc,
 
         if (argc != 2) {
                 g_printerr ("Wrong number of arguments passed, 1 expected\n");
-                return 1;
+                return PAM_AUTHTOK_ERR;
         }
 
         username = argv[1];
 
         stdin = g_io_channel_unix_new (STDIN_FILENO);
+        if (getuid() != 0) {
+                /* Running from the user session, read the old password first */
+                old_password = read_word (stdin, FALSE);
+        }
+
         password = read_word (stdin, FALSE);
         pin = read_word (stdin, TRUE);
         g_io_channel_unref (stdin);
@@ -143,7 +153,7 @@ main (int    argc,
         if (res != PAM_SUCCESS) {
                 /* pam_strerror can't be used without a pam handle */
                 g_printerr ("Pam handle creation failed (not enough memory?)\n");
-                return 2;
+                return res;
         }
 
         res = pam_chauthtok (pamh, PAM_SILENT);
@@ -155,5 +165,5 @@ main (int    argc,
         g_free (password);
         g_free (pin);
 
-        return res == PAM_SUCCESS ? 0 : 2;
+        return res;
 }

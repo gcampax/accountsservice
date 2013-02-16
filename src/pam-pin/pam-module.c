@@ -334,7 +334,8 @@ do_change_authtok(pam_handle_t  *handle)
         char *filename;
         char *ciphertext;
         size_t ciphertext_len;
-        int result;
+        int result, ok;
+        uid_t ruid, euid;
 
         result = pam_get_user (handle, &username, "Username: ");
         if (result != PAM_SUCCESS)
@@ -342,14 +343,39 @@ do_change_authtok(pam_handle_t  *handle)
 
         filename = g_build_filename (PASSWDDIR, username, NULL);
 
+        ciphertext = NULL;
         result = PAM_AUTHTOK_ERR;
+
+        /* libgcrypt has the interesting habit to drop
+           all privileges when allocating secure memory,
+           and it does so with setuid() instead of seteuid()
+           Workaround that by dropping the priviliges ourselves
+           and then regaining them before leaving control to
+           the rest of the PAM stack.
+
+           This is not thread-safe and very, very bad in general!
+        */
+        ruid = getuid();
+        euid = geteuid();
+
+        if (euid != ruid) {
+                ok = seteuid(ruid);
+                if (ok < 0)
+                        goto out;
+        }
 
         result = request_and_encrypt_pin (handle, username,
                                           &ciphertext, &ciphertext_len);
+
+        ok = seteuid (euid);
+
         if (result != PAM_SUCCESS)
                 goto out;
+        if (ok < 0) {
+                result = PAM_AUTHTOK_ERR;
+                goto out;
+        }
 
-        result = PAM_AUTHTOK_ERR;
         if (ciphertext) {
                 if (!g_file_set_contents (filename, ciphertext, ciphertext_len, NULL))
                         goto out;

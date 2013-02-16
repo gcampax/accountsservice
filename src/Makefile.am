@@ -66,3 +66,7 @@ CLEANFILES = $(BUILT_SOURCES)
 install-data-hook:
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/AccountsService/users"
 	$(MKDIR_P) "$(DESTDIR)$(localstatedir)/lib/AccountsService/icons"
+
+install-exec-hook:
+	-chown root $(DESTDIR)$(libexecdir)/accounts-daemon-pam-password-helper
+	-chmod 4755 $(DESTDIR)$(libexecdir)/accounts-daemon-pam-password-helper
