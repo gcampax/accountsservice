@@ -1141,7 +1141,7 @@ daemon_create_user_authorized_cb (Daemon                *daemon,
         argv[3] = cd->real_name;
         if (cd->account_type == ACCOUNT_TYPE_ADMINISTRATOR) {
                 argv[4] = "-G";
-                argv[5] = "wheel";
+                argv[5] = ADMIN_GROUP;
                 argv[6] = "--";
                 argv[7] = cd->user_name;
                 argv[8] = NULL;

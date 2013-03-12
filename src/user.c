@@ -125,9 +125,9 @@ account_type_from_pwent (struct passwd *pwent)
                 return ACCOUNT_TYPE_ADMINISTRATOR;
         }
 
-        grp = getgrnam ("wheel");
+        grp = getgrnam (ADMIN_GROUP);
         if (grp == NULL) {
-                g_debug ("wheel group not found");
+                g_debug (ADMIN_GROUP " group not found");
                 return ACCOUNT_TYPE_STANDARD;
         }
         wheel = grp->gr_gid;
@@ -1298,7 +1298,7 @@ user_change_account_type_authorized_cb (Daemon                *daemon,
                          "change account type of user '%s' (%d) to %d",
                          user->user_name, user->uid, account_type);
 
-                grp = getgrnam ("wheel");
+                grp = getgrnam (ADMIN_GROUP);
                 if (grp == NULL) {
                         throw_error (context, ERROR_FAILED, "failed to set account type: wheel group not found");
                         return;

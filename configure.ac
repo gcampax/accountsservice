@@ -40,6 +40,26 @@ GOBJECT_INTROSPECTION_CHECK([0.9.12])
 
 VAPIGEN_CHECK
 
+dnl ---------------------------------------------------------------------------
+dnl - Core configuration
+dnl ---------------------------------------------------------------------------
+
+AC_ARG_ENABLE(admin-group,
+        [AS_HELP_STRING([--enable-admin-group],[Set group for administrative accounts @<:@default=auto@:>@])],
+        ,enable_admin_group=auto)
+AS_IF([test x$enable_admin_group = xauto], [
+  AC_CHECK_FILE(/etc/redhat-release, enable_admin_group=wheel)
+  AC_CHECK_FILE(/etc/debian_version, enable_admin_group=sudo)
+  AS_IF([test x$enable_admin_group = xauto], [
+    enable_admin_group=wheel
+  ])
+])
+AC_DEFINE(ADMIN_GROUP, [$enable_admin_group], [Define to the group for administrator users])
+
+dnl ---------------------------------------------------------------------------
+dnl - Warnings
+dnl ---------------------------------------------------------------------------
+
 AC_ARG_ENABLE(more-warnings,
               AS_HELP_STRING([--enable-more-warnings],
                              [Maximum compiler warnings]),
@@ -259,6 +279,7 @@ if test "x$enable_docbook_docs" = "xyes"; then
 else
         AC_MSG_NOTICE([** DocBook documentation build disabled])
 fi
+        AC_MSG_NOTICE([** Administrator group: $enable_admin_group])
 echo
 
 
