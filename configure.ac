@@ -54,7 +54,7 @@ AS_IF([test x$enable_admin_group = xauto], [
     enable_admin_group=wheel
   ])
 ])
-AC_DEFINE(ADMIN_GROUP, [$enable_admin_group], [Define to the group for administrator users])
+AC_DEFINE_UNQUOTED([ADMIN_GROUP], ["$enable_admin_group"], [Define to the group for administrator users])
 
 dnl ---------------------------------------------------------------------------
 dnl - Warnings
