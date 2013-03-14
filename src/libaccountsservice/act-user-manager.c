@@ -2191,7 +2191,7 @@ listify_hash_values_hfunc (gpointer key,
  *
  * Get a list of system user accounts
  *
- * Returns: (element-type ActUser) (transfer full): List of #ActUser objects
+ * Returns: (element-type ActUser) (transfer container): List of #ActUser objects
  */
 GSList *
 act_user_manager_list_users (ActUserManager *manager)
