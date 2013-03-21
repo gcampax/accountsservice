@@ -42,8 +42,10 @@
 #include <gio/gunixinputstream.h>
 
 #ifdef WITH_SYSTEMD
-#include <systemd/sd-daemon.h>
 #include <systemd/sd-login.h>
+
+/* check if logind is running */
+#define LOGIND_RUNNING() (access("/run/systemd/seats/", F_OK) >= 0)
 #endif
 
 #include "act-user-manager.h"
@@ -392,7 +394,7 @@ session_is_login_window (ActUserManager *manager,
                          const char     *session_id)
 {
 #ifdef WITH_SYSTEMD
-        if (sd_booted () > 0) {
+        if (LOGIND_RUNNING()) {
                 return _systemd_session_is_login_window (manager, session_id);
         }
 #endif
@@ -477,7 +479,7 @@ act_user_manager_can_switch (ActUserManager *manager)
 
 
 #ifdef WITH_SYSTEMD
-        if (sd_booted () > 0) {
+        if (LOGIND_RUNNING()) {
                 return _can_activate_systemd_sessions (manager);
         }
 #endif
@@ -513,7 +515,7 @@ act_user_manager_activate_user_session (ActUserManager *manager,
         }
 
 #ifdef WITH_SYSTEMD
-        if (sd_booted () > 0) {
+        if (LOGIND_RUNNING()) {
                 return activate_systemd_session_id (manager, manager->priv->seat.id, ssid);
         }
 #endif
@@ -664,7 +666,7 @@ static void
 get_seat_id_for_current_session (ActUserManager *manager)
 {
 #ifdef WITH_SYSTEMD
-        if (sd_booted () > 0) {
+        if (LOGIND_RUNNING()) {
                 _get_systemd_seat_id (manager);
                 return;
         }
@@ -1030,7 +1032,7 @@ static void
 get_current_session_id (ActUserManager *manager)
 {
 #ifdef WITH_SYSTEMD
-        if (sd_booted () > 0) {
+        if (LOGIND_RUNNING()) {
                 _get_current_systemd_session_id (manager);
                 return;
         }
@@ -1091,7 +1093,7 @@ get_proxy_for_new_session (ActUserManagerNewSession *new_session)
 {
         GError            *error = NULL;
 #ifdef WITH_SYSTEMD
-        if (sd_booted () > 0) {
+        if (LOGIND_RUNNING()) {
                 new_session->state++;
                 load_new_session_incrementally (new_session);
                 return;
@@ -1184,7 +1186,7 @@ static void
 get_uid_for_new_session (ActUserManagerNewSession *new_session)
 {
 #ifdef WITH_SYSTEMD
-        if (sd_booted () > 0) {
+        if (LOGIND_RUNNING()) {
                 _get_uid_for_new_systemd_session (new_session);
                 return;
         }
@@ -1461,7 +1463,7 @@ static void
 get_x11_display_for_new_session (ActUserManagerNewSession *new_session)
 {
 #ifdef WITH_SYSTEMD
-        if (sd_booted () > 0) {
+        if (LOGIND_RUNNING()) {
                 _get_x11_display_for_new_systemd_session (new_session);
                 return;
         }
@@ -1819,7 +1821,7 @@ get_seat_proxy (ActUserManager *manager)
         GError *error = NULL;
 
 #ifdef WITH_SYSTEMD
-        if (sd_booted () > 0) {
+        if (LOGIND_RUNNING()) {
                 _monitor_for_systemd_session_changes (manager);
                 manager->priv->seat.state++;
                 return;
@@ -1893,7 +1895,7 @@ get_session_proxy (ActUserManager *manager)
         g_debug ("get_session_proxy");
 
 #ifdef WITH_SYSTEMD
-        if (sd_booted () > 0) {
+        if (LOGIND_RUNNING()) {
                 manager->priv->seat.state++;
                 queue_load_seat_incrementally (manager);
                 return;
@@ -2317,7 +2319,7 @@ static void
 load_sessions (ActUserManager *manager)
 {
 #ifdef WITH_SYSTEMD
-        if (sd_booted () > 0) {
+        if (LOGIND_RUNNING()) {
                 reload_systemd_sessions (manager);
                 maybe_set_is_loaded (manager);
                 return;
