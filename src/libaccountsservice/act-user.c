@@ -1342,30 +1342,39 @@ _act_user_load_from_user (ActUser    *user,
                 g_signal_emit (user, signals[SESSIONS_CHANGED], 0);
         }
 
+        g_free (user->real_name);
         user->real_name = g_strdup (user_to_copy->real_name);
         g_object_notify (G_OBJECT (user), "real-name");
 
+        g_free (user->password_hint);
         user->password_hint = g_strdup (user_to_copy->real_name);
         g_object_notify (G_OBJECT (user), "password-hint");
 
+        g_free (user->home_dir);
         user->home_dir = g_strdup (user_to_copy->home_dir);
         g_object_notify (G_OBJECT (user), "home-directory");
 
+        g_free (user->shell);
         user->shell = g_strdup (user_to_copy->shell);
         g_object_notify (G_OBJECT (user), "shell");
 
+        g_free (user->email);
         user->email = g_strdup (user_to_copy->email);
         g_object_notify (G_OBJECT (user), "email");
 
+        g_free (user->location);
         user->location = g_strdup (user_to_copy->location);
         g_object_notify (G_OBJECT (user), "location");
 
+        g_free (user->icon_file);
         user->icon_file = g_strdup (user_to_copy->icon_file);
         g_object_notify (G_OBJECT (user), "icon-file");
 
+        g_free (user->language);
         user->language = g_strdup (user_to_copy->language);
         g_object_notify (G_OBJECT (user), "language");
 
+        g_free (user->x_session);
         user->x_session = g_strdup (user_to_copy->x_session);
         g_object_notify (G_OBJECT (user), "x-session");
 
