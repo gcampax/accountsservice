@@ -50,6 +50,9 @@
 #define PATH_NOLOGIN "/sbin/nologin"
 #define PATH_FALSE "/bin/false"
 #define PATH_GDM_CUSTOM "/etc/gdm/custom.conf"
+#ifdef HAVE_UTMPX_H
+#define PATH_WTMP _PATH_WTMPX
+#endif
 
 static const char *default_excludes[] = {
         "bin",
@@ -99,6 +102,9 @@ struct DaemonPrivate {
         GFileMonitor *passwd_monitor;
         GFileMonitor *shadow_monitor;
         GFileMonitor *gdm_monitor;
+#ifdef HAVE_UTMPX_H
+        GFileMonitor *wtmp_monitor;
+#endif
 
         guint reload_id;
         guint autologin_id;
@@ -271,7 +277,7 @@ entry_generator_wtmp (GHashTable *users,
                         return NULL;
                 }
 #else
-                utmpxname (_PATH_WTMPX);
+                utmpxname (PATH_WTMP);
                 setutxent ();
 #endif
                 *state = g_new (WTmpGeneratorState, 1);
@@ -788,6 +794,24 @@ daemon_init (Daemon *daemon)
                 g_error_free (error);
         }
         g_object_unref (file);
+
+#ifdef HAVE_UTMPX_H
+        file = g_file_new_for_path (PATH_WTMP);
+        daemon->priv->wtmp_monitor = g_file_monitor_file (file,
+                                                           G_FILE_MONITOR_NONE,
+                                                           NULL,
+                                                           &error);
+        if (daemon->priv->wtmp_monitor != NULL) {
+                g_signal_connect (daemon->priv->wtmp_monitor,
+                                  "changed",
+                                  G_CALLBACK (on_users_monitor_changed),
+                                  daemon);
+        } else {
+                g_warning ("Unable to monitor %s: %s", PATH_WTMP, error->message);
+                g_error_free (error);
+        }
+        g_object_unref (file);
+#endif
 
         file = g_file_new_for_path (PATH_GDM_CUSTOM);
         daemon->priv->gdm_monitor = g_file_monitor_file (file,
