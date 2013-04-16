@@ -1,3 +1,12 @@
+Changes in 0.6.31
+=================
+
+* Check for logind, not systemd (#62586)
+* Add --enable-admin-group configure option (#62235)
+* Be more aggressive at excluding system accounts (#48178)
+* Fix xsession property notification (#58493)
+* Fix login history variant handling (#58466)
+
 Changes in 0.6.30
 =================
 
