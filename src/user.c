@@ -1700,7 +1700,7 @@ user_real_get_login_time (AccountsUser *user)
         return USER (user)->login_time;
 }
 
-static const GVariant *
+static GVariant *
 user_real_get_login_history (AccountsUser *user)
 {
         return USER (user)->login_history;
