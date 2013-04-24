@@ -41,6 +41,29 @@
  * An ActUser object represents a user account on the system.
  */
 
+/**
+ * ActUser:
+ *
+ * Represents a user account on the system.
+ */
+
+/**
+ * ActUserAccountType:
+ * @ACT_USER_ACCOUNT_TYPE_STANDARD: Normal non-administrative user
+ * @ACT_USER_ACCOUNT_TYPE_ADMINISTRATOR: Administrative user
+ *
+ * Type of user account
+ */
+
+/**
+ * ActUserPasswordMode:
+ * @ACT_USER_PASSWORD_MODE_REGULAR: Password set normally
+ * @ACT_USER_PASSWORD_MODE_SET_AT_LOGIN: Password will be chosen at next login
+ * @ACT_USER_PASSWORD_MODE_NONE: No password set
+ *
+ * Mode for setting the user's password.
+ */
+
 #define ACT_USER_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), ACT_TYPE_USER, ActUserClass))
 #define ACT_IS_USER_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), ACT_TYPE_USER))
 #define ACT_USER_GET_CLASS(object) (G_TYPE_INSTANCE_GET_CLASS ((object), ACT_TYPE_USER, ActUserClass))
@@ -179,6 +202,14 @@ _act_user_remove_session (ActUser    *user,
         }
 }
 
+/**
+ * act_user_get_num_sessions:
+ * @user: a user
+ *
+ * Get the number of current sessions for a user.
+ *
+ * Returns: the number of sessions
+ */
 guint
 act_user_get_num_sessions (ActUser    *user)
 {
@@ -403,8 +434,8 @@ act_user_class_init (ActUserClass *class)
         g_object_class_install_property (gobject_class,
                                          PROP_IS_LOADED,
                                          g_param_spec_boolean ("is-loaded",
-                                                               NULL,
-                                                               NULL,
+                                                               "Is loaded",
+                                                               "Determines whether or not the user object is loaded and ready to read from.",
                                                                FALSE,
                                                                G_PARAM_READABLE));
         g_object_class_install_property (gobject_class,
@@ -440,6 +471,11 @@ act_user_class_init (ActUserClass *class)
                                                                G_PARAM_READABLE));
 
 
+        /**
+         * ActUser::changed:
+         *
+         * Emitted when the user accounts changes in some way.
+         */
         signals [CHANGED] =
                 g_signal_new ("changed",
                               G_TYPE_FROM_CLASS (class),
@@ -448,6 +484,11 @@ act_user_class_init (ActUserClass *class)
                               NULL, NULL,
                               g_cclosure_marshal_VOID__VOID,
                               G_TYPE_NONE, 0);
+        /**
+         * ActUser::sessions-changed:
+         *
+         * Emitted when the list of sessions for this user changes.
+         */
         signals [SESSIONS_CHANGED] =
                 g_signal_new ("sessions-changed",
                               G_TYPE_FROM_CLASS (class),
@@ -748,6 +789,16 @@ act_user_get_login_history (ActUser *user) {
         return user->login_history;
 }
 
+/**
+ * act_user_collate:
+ * @user1: a user
+ * @user2: a user
+ *
+ * Organize the user by login frequency and names.
+ *
+ * Returns: negative if @user1 is before @user2, zero if equal
+ *    or positive if @user1 is after @user2
+ */
 int
 act_user_collate (ActUser *user1,
                   ActUser *user2)
@@ -1774,6 +1825,7 @@ act_user_set_locked (ActUser  *user,
 
 /**
  * act_user_set_automatic_login:
+ * @user: the user object to alter
  * @enabled: whether or not to autologin for user.
  *
  * If enabled is set to %TRUE then this user will automatically be logged in

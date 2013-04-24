@@ -22,3 +22,7 @@ GTKDOC_CFLAGS=-I$(top_srcdir)/src/libaccountsservice
 GTKDOC_LIBS=$(top_builddir)/src/libaccountsservice/libaccountsservice.la
 
 include $(top_srcdir)/gtk-doc.make
+
+CLEANFILES += \
+	*-decl*.txt \
+	$(NULL)

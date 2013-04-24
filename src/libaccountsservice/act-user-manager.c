@@ -67,6 +67,29 @@
  * can be obtained by act_user_manager_get_default().
  */
 
+/**
+ * ActUserManager:
+ *
+ * A user manager object.
+ */
+
+/**
+ * ACT_USER_MANAGER_ERROR:
+ *
+ * The GError domain for #ActUserManagerError errors
+ */
+
+/**
+ * ActUserManagerError:
+ * @ACT_USER_MANAGER_ERROR_FAILED: Generic failure
+ * @ACT_USER_MANAGER_ERROR_USER_EXISTS: The user already exists
+ * @ACT_USER_MANAGER_ERROR_USER_DOES_NOT_EXIST: The user does not exist
+ * @ACT_USER_MANAGER_ERROR_PERMISSION_DENIED: Permission denied
+ * @ACT_USER_MANAGER_ERROR_NOT_SUPPORTED: Operation not supported
+ *
+ * Various error codes returned by the accounts service.
+ */
+
 #define ACT_USER_MANAGER_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), ACT_TYPE_USER_MANAGER, ActUserManagerPrivate))
 
 #define CK_NAME      "org.freedesktop.ConsoleKit"
@@ -402,6 +425,14 @@ session_is_login_window (ActUserManager *manager,
         return _ck_session_is_login_window (manager, session_id);
 }
 
+/**
+ * act_user_manager_goto_login_session:
+ * @manager: the user manager
+ *
+ * Switch the display to the login manager.
+ *
+ * Returns: whether successful or not
+ */
 gboolean
 act_user_manager_goto_login_session (ActUserManager *manager)
 {
@@ -462,6 +493,14 @@ _can_activate_console_kit_sessions (ActUserManager *manager)
         return can_activate_sessions;
 }
 
+/**
+ * act_user_manager_can_switch:
+ * @manager: the user manager
+ *
+ * Check whether the user can switch to another session.
+ *
+ * Returns: whether we can switch to another session
+ */
 gboolean
 act_user_manager_can_switch (ActUserManager *manager)
 {
@@ -487,6 +526,15 @@ act_user_manager_can_switch (ActUserManager *manager)
         return _can_activate_console_kit_sessions (manager);
 }
 
+/**
+ * act_user_manager_activate_user_session:
+ * @manager: the user manager
+ * @user: the user to activate
+ *
+ * Activate the session for a given user.
+ *
+ * Returns: whether successfully activated
+ */
 gboolean
 act_user_manager_activate_user_session (ActUserManager *manager,
                                         ActUser        *user)
@@ -2482,31 +2530,36 @@ act_user_manager_class_init (ActUserManagerClass *klass)
         g_object_class_install_property (object_class,
                                          PROP_IS_LOADED,
                                          g_param_spec_boolean ("is-loaded",
-                                                               NULL,
-                                                               NULL,
+                                                               "Is loaded",
+                                                               "Determines whether or not the manager object is loaded and ready to read from.",
                                                                FALSE,
                                                                G_PARAM_READABLE));
         g_object_class_install_property (object_class,
                                          PROP_HAS_MULTIPLE_USERS,
                                          g_param_spec_boolean ("has-multiple-users",
-                                                               NULL,
-                                                               NULL,
+                                                               "Has multiple users",
+                                                               "Whether more than one normal user is present",
                                                                FALSE,
                                                                G_PARAM_READABLE));
         g_object_class_install_property (object_class,
                                          PROP_INCLUDE_USERNAMES_LIST,
                                          g_param_spec_pointer ("include-usernames-list",
-                                                               NULL,
-                                                               NULL,
+                                                               "Include usernames list",
+                                                               "Usernames who are specifically included",
                                                                G_PARAM_READWRITE));
 
         g_object_class_install_property (object_class,
                                          PROP_EXCLUDE_USERNAMES_LIST,
                                          g_param_spec_pointer ("exclude-usernames-list",
-                                                               NULL,
-                                                               NULL,
+                                                               "Exclude usernames list",
+                                                               "Usernames who are specifically excluded",
                                                                G_PARAM_READWRITE));
 
+        /**
+         * ActUserManager::user-added:
+         *
+         * Emitted when a user is added to the user manager.
+         */
         signals [USER_ADDED] =
                 g_signal_new ("user-added",
                               G_TYPE_FROM_CLASS (klass),
@@ -2515,6 +2568,11 @@ act_user_manager_class_init (ActUserManagerClass *klass)
                               NULL, NULL,
                               g_cclosure_marshal_VOID__OBJECT,
                               G_TYPE_NONE, 1, ACT_TYPE_USER);
+        /**
+         * ActUserManager::user-removed:
+         *
+         * Emitted when a user is removed from the user manager.
+         */
         signals [USER_REMOVED] =
                 g_signal_new ("user-removed",
                               G_TYPE_FROM_CLASS (klass),
@@ -2523,6 +2581,11 @@ act_user_manager_class_init (ActUserManagerClass *klass)
                               NULL, NULL,
                               g_cclosure_marshal_VOID__OBJECT,
                               G_TYPE_NONE, 1, ACT_TYPE_USER);
+        /**
+         * ActUserManager::user-is-logged-in-changed:
+         *
+         * One of the users has logged in or out.
+         */
         signals [USER_IS_LOGGED_IN_CHANGED] =
                 g_signal_new ("user-is-logged-in-changed",
                               G_TYPE_FROM_CLASS (klass),
@@ -2531,6 +2594,11 @@ act_user_manager_class_init (ActUserManagerClass *klass)
                               NULL, NULL,
                               g_cclosure_marshal_VOID__OBJECT,
                               G_TYPE_NONE, 1, ACT_TYPE_USER);
+        /**
+         * ActUserManager::user-changed:
+         *
+         * One of the users has changed
+         */
         signals [USER_CHANGED] =
                 g_signal_new ("user-changed",
                               G_TYPE_FROM_CLASS (klass),
@@ -2767,6 +2835,8 @@ act_user_manager_get_default (void)
  * act_user_manager_no_service:
  * @manager: a #ActUserManager
  *
+ * Check whether or not the accounts service is running.
+ *
  * Returns: whether or not accounts service is running
  */
 gboolean
@@ -2846,7 +2916,7 @@ act_user_manager_async_complete_handler (GObject      *source,
  *     %NULL to ignore
  * @callback: (scope async): a #GAsyncReadyCallback to call
  *     when the request is satisfied
- * @user_data (closure): the data to pass to @callback
+ * @user_data: (closure): the data to pass to @callback
  *
  * Asynchronously creates a user account on the system.
  *
@@ -2984,7 +3054,7 @@ act_user_manager_cache_user (ActUserManager     *manager,
  *     %NULL to ignore
  * @callback: (scope async): a #GAsyncReadyCallback to call
  *     when the request is satisfied
- * @user_data (closure): the data to pass to @callback
+ * @user_data: (closure): the data to pass to @callback
  *
  * Asynchronously caches a user account so it shows up via
  * act_user_manager_list_users().
@@ -3151,7 +3221,7 @@ act_user_manager_delete_user (ActUserManager  *manager,
  *     %NULL to ignore
  * @callback: (scope async): a #GAsyncReadyCallback to call
  *     when the request is satisfied
- * @user_data (closure): the data to pass to @callback
+ * @user_data: (closure): the data to pass to @callback
  *
  * Asynchronously deletes a user account from the system.
  *
