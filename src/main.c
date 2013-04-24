@@ -102,6 +102,27 @@ on_name_lost (GDBusConnection  *connection,
 static gboolean debug;
 
 static void
+on_log_debug (const gchar *log_domain,
+              GLogLevelFlags log_level,
+              const gchar *message,
+              gpointer user_data)
+{
+        GString *string;
+        const gchar *progname;
+        int ret G_GNUC_UNUSED;
+
+        string = g_string_new (NULL);
+
+        progname = g_get_prgname ();
+        g_string_append_printf (string, "(%s:%lu): %s%sDEBUG: %s\n",
+                                progname ? progname : "process", (gulong)getpid (),
+                                log_domain ? log_domain : "", log_domain ? "-" : "",
+                                message ? message : "(NULL) message");
+
+        ret = write (1, string->str, string->len);
+}
+
+static void
 log_handler (const gchar   *domain,
              GLogLevelFlags level,
              const gchar   *message,
@@ -162,6 +183,9 @@ main (int argc, char *argv[])
                 goto out;
         }
 
+        /* If --debug, then print debug messages even when no G_MESSAGES_DEBUG */
+        if (debug && !g_getenv ("G_MESSAGES_DEBUG"))
+                g_log_set_handler (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, on_log_debug, NULL);
         g_log_set_default_handler (log_handler, NULL);
 
         flags = G_BUS_NAME_OWNER_FLAGS_ALLOW_REPLACEMENT;
