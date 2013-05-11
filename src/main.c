@@ -31,6 +31,7 @@
 
 #include <glib.h>
 #include <glib/gi18n.h>
+#include <glib-unix.h>
 
 #include "daemon.h"
 
@@ -135,6 +136,13 @@ log_handler (const gchar   *domain,
         g_log_default_handler (domain, level, message, data);
 }
 
+static gboolean
+on_signal_quit (gpointer data)
+{
+        g_main_loop_quit (data);
+        return FALSE;
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -202,9 +210,13 @@ main (int argc, char *argv[])
 
         loop = g_main_loop_new (NULL, FALSE);
 
+        g_unix_signal_add (SIGINT, on_signal_quit, loop);
+        g_unix_signal_add (SIGTERM, on_signal_quit, loop);
+
         g_debug ("entering main loop");
         g_main_loop_run (loop);
 
+        g_debug ("exiting");
         g_main_loop_unref (loop);
 
         ret = 0;
