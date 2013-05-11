@@ -20,7 +20,7 @@ act-user-enum-types.h: act-user.h act-user-manager.h
 	          --fprod "/* enumerations from \"@filename@\" */\n" \
 	          --vhead "GType @enum_name@_get_type (void);\n#define ACT_USER_TYPE_@ENUMSHORT@ (@enum_name@_get_type())\n"    \
 	          --ftail "G_END_DECLS\n\n#endif /* __ACT_USER_ENUM_TYPES_H__ */" \
-	          $^ ) > $@
+	          $(^F) ) > $@
 
 act-user-enum-types.c: act-user.h act-user-manager.h act-user-enum-types.h
 	$(AM_V_GEN) (cd $(srcdir) && \
@@ -33,7 +33,7 @@ act-user-enum-types.c: act-user.h act-user-manager.h act-user-enum-types.h
 	          --vhead "GType\n@enum_name@_get_type (void)\n{\n  static GType etype = 0;\n  if (etype == 0) {\n    static const G@Type@Value values[] = {"    \
 	          --vprod "      { @VALUENAME@, \"@VALUENAME@\", \"@valuenick@\" }," \
 	          --vtail "      { 0, NULL, NULL }\n    };\n    etype = g_@type@_register_static (\"@EnumName@\", values);\n  }\n  return etype;\n}\n" \
-	         $^ ) > $@
+	         $(^F) ) > $@
 
 ck-manager-generated.c ck-manager-generated.h: org.freedesktop.ConsoleKit.Manager.xml Makefile
 	$(AM_V_GEN) gdbus-codegen --generate-c-code ck-manager-generated --c-namespace ConsoleKit --interface-prefix=org.freedesktop.ConsoleKit $(srcdir)/org.freedesktop.ConsoleKit.Manager.xml
