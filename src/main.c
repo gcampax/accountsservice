@@ -166,7 +166,9 @@ main (int argc, char *argv[])
         setlocale (LC_ALL, "");
         bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
 
+#if !GLIB_CHECK_VERSION (2, 35, 3)
         g_type_init ();
+#endif
 
         if (!g_setenv ("GIO_USE_VFS", "local", TRUE)) {
                 g_warning ("Couldn't set GIO_USE_GVFS");
