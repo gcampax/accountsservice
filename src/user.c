@@ -1085,14 +1085,14 @@ user_change_icon_file_authorized_cb (Daemon                *daemon,
         g_object_unref (file);
 
         if (type != G_FILE_TYPE_REGULAR) {
-                g_debug ("not a regular file\n");
+                g_debug ("not a regular file");
                 throw_error (context, ERROR_FAILED, "file '%s' is not a regular file", filename);
                 g_free (filename);
                 return;
         }
 
         if (size > 1048576) {
-                g_debug ("file too large\n");
+                g_debug ("file too large");
                 /* 1MB ought to be enough for everybody */
                 throw_error (context, ERROR_FAILED, "file '%s' is too large to be used as an icon", filename);
                 g_free (filename);

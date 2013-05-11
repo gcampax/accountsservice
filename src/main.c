@@ -178,7 +178,7 @@ main (int argc, char *argv[])
 
         loop = g_main_loop_new (NULL, FALSE);
 
-        g_debug ("entering main loop\n");
+        g_debug ("entering main loop");
         g_main_loop_run (loop);
 
         g_main_loop_unref (loop);

@@ -654,7 +654,7 @@ reload_autologin_timeout (Daemon *daemon)
         }
 
         if (enabled) {
-                g_debug ("automatic login is enabled for '%s'\n", name);
+                g_debug ("automatic login is enabled for '%s'", name);
                 if (daemon->priv->autologin != user) {
                         g_object_set (user, "automatic-login", TRUE, NULL);
                         daemon->priv->autologin = g_object_ref (user);
@@ -662,7 +662,7 @@ reload_autologin_timeout (Daemon *daemon)
                 }
         }
         else {
-                g_debug ("automatic login is disabled\n");
+                g_debug ("automatic login is disabled");
         }
 
         g_free (name);
@@ -952,7 +952,7 @@ daemon_local_find_user_by_name (Daemon      *daemon,
 
         pwent = getpwnam (name);
         if (pwent == NULL) {
-                g_debug ("unable to lookup name %s", name);
+                g_debug ("unable to lookup name %s: %s", name, g_strerror (errno));
                 return NULL;
         }
 
@@ -1050,16 +1050,16 @@ finish_list_cached_users (gpointer user_data)
                 shell = user_get_shell (user);
 
                 if (user_get_system_account (user)) {
-                        g_debug ("user %s %ld is system account, so excluded\n", name, (long) uid);
+                        g_debug ("user %s %ld is system account, so excluded", name, (long) uid);
                         continue;
                 }
 
                 if (daemon_local_user_is_excluded (data->daemon, name, shell, NULL)) {
-                        g_debug ("user %s %ld excluded\n", name, (long) uid);
+                        g_debug ("user %s %ld excluded", name, (long) uid);
                         continue;
                 }
 
-                g_debug ("user %s %ld not excluded\n", name, (long) uid);
+                g_debug ("user %s %ld not excluded", name, (long) uid);
                 g_ptr_array_add (object_paths, (gpointer) user_get_object_path (user));
         }
         g_ptr_array_add (object_paths, NULL);
