@@ -1,3 +1,15 @@
+Changes in 0.6.32
+=================
+
+* Don't treat remote users as system accounts (#64186)
+* Clean up spawn_with_login_uid error handling (#55067)
+* Quit on SIGINT/SIGTERM (#63869)
+* Make --debug work as expected (#63870)
+* Remove newlines from debug output (#63871)
+* Fix mismatched function signature (#63873)
+* Fix gir/vapi warnings (#63875)
+* Fix documentation warnings (#63880)
+
 Changes in 0.6.31
 =================
 
