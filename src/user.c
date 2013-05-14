@@ -244,7 +244,7 @@ user_update_from_pwent (User          *user,
                 g_object_notify (G_OBJECT (user), "shell");
         }
 
-        passwd = pwent->pw_passwd;
+        passwd = NULL;
 #ifdef HAVE_SHADOW_H
         spent = getspnam (pwent->pw_name);
         if (spent)
