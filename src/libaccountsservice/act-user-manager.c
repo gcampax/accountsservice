@@ -822,15 +822,15 @@ add_user (ActUserManager *manager,
                                  G_CALLBACK (on_user_changed),
                                  manager, 0);
 
+        if (g_hash_table_size (manager->priv->normal_users_by_name) > 1) {
+                set_has_multiple_users (manager, TRUE);
+        }
+
         if (manager->priv->is_loaded) {
                 g_debug ("ActUserManager: loaded, so emitting user-added signal");
                 g_signal_emit (manager, signals[USER_ADDED], 0, user);
         } else {
                 g_debug ("ActUserManager: not yet loaded, so not emitting user-added signal");
-        }
-
-        if (g_hash_table_size (manager->priv->normal_users_by_name) > 1) {
-                set_has_multiple_users (manager, TRUE);
         }
 }
 
@@ -855,6 +855,10 @@ remove_user (ActUserManager *manager,
 
         }
 
+        if (g_hash_table_size (manager->priv->normal_users_by_name) <= 1) {
+                set_has_multiple_users (manager, FALSE);
+        }
+
         if (manager->priv->is_loaded) {
                 g_debug ("ActUserManager: loaded, so emitting user-removed signal");
                 g_signal_emit (manager, signals[USER_REMOVED], 0, user);
@@ -863,10 +867,6 @@ remove_user (ActUserManager *manager,
         }
 
         g_object_unref (user);
-
-        if (g_hash_table_size (manager->priv->normal_users_by_name) <= 1) {
-                set_has_multiple_users (manager, FALSE);
-        }
 }
 
 static ActUser *
