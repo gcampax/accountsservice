@@ -347,6 +347,16 @@ user_update_from_keyfile (User     *user,
                 g_object_notify (G_OBJECT (user), "icon-file");
         }
 
+        if (g_key_file_has_key (keyfile, "User", "SystemAccount", NULL)) {
+            gboolean system_account;
+
+            system_account = g_key_file_get_boolean (keyfile, "User", "SystemAccount", NULL);
+            if (system_account != user->system_account) {
+                    user->system_account = system_account;
+                    g_object_notify (G_OBJECT (user), "system-account");
+            }
+        }
+
         g_object_thaw_notify (G_OBJECT (user));
 }
 
