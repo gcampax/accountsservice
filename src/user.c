@@ -381,6 +381,8 @@ user_save_to_keyfile (User     *user,
 
         if (user->icon_file)
                 g_key_file_set_string (keyfile, "User", "Icon", user->icon_file);
+
+        g_key_file_set_boolean (keyfile, "User", "SystemAccount", user->system_account);
 }
 
 static void
