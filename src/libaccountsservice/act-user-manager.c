@@ -241,6 +241,8 @@ static void     give_up (ActUserManager                 *manager,
 static void     fetch_user_incrementally       (ActUserManagerFetchUserRequest *request);
 
 static void     maybe_set_is_loaded            (ActUserManager *manager);
+static void     update_user                    (ActUserManager *manager,
+                                                ActUser        *user);
 static gpointer user_manager_object = NULL;
 
 G_DEFINE_TYPE (ActUserManager, act_user_manager, G_TYPE_OBJECT)
@@ -634,6 +636,8 @@ on_user_changed (ActUser        *user,
                          describe_user (user));
 
                 g_signal_emit (manager, signals[USER_CHANGED], 0, user);
+
+                update_user (manager, user);
         }
 }
 
@@ -867,6 +871,40 @@ remove_user (ActUserManager *manager,
         }
 
         g_object_unref (user);
+}
+
+static void
+update_user (ActUserManager *manager,
+             ActUser        *user)
+{
+        const char *username;
+
+        username = act_user_get_user_name (user);
+        if (g_hash_table_lookup (manager->priv->system_users_by_name, username) != NULL) {
+                if (!act_user_is_system_account (user)) {
+                        g_hash_table_insert (manager->priv->normal_users_by_name,
+                                             g_strdup (act_user_get_user_name (user)),
+                                             g_object_ref (user));
+                        g_hash_table_remove (manager->priv->system_users_by_name, username);
+                        g_signal_emit (manager, signals[USER_ADDED], 0, user);
+
+                        if (g_hash_table_size (manager->priv->normal_users_by_name) > 1) {
+                                set_has_multiple_users (manager, TRUE);
+                        }
+                }
+        } else {
+                if (act_user_is_system_account (user)) {
+                        g_hash_table_insert (manager->priv->system_users_by_name,
+                                             g_strdup (act_user_get_user_name (user)),
+                                             g_object_ref (user));
+                        g_hash_table_remove (manager->priv->normal_users_by_name, username);
+                        g_signal_emit (manager, signals[USER_REMOVED], 0, user);
+
+                        if (g_hash_table_size (manager->priv->normal_users_by_name) <= 1) {
+                                set_has_multiple_users (manager, FALSE);
+                        }
+                }
+        }
 }
 
 static ActUser *
