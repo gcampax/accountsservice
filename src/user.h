@@ -63,6 +63,8 @@ void           user_update_local_account_property (User          *user,
 void           user_register                (User          *user);
 void           user_unregister              (User          *user);
 
+void           user_save                    (User          *user);
+
 const gchar *  user_get_user_name           (User          *user);
 gboolean       user_get_system_account      (User          *user);
 gboolean       user_get_local_account       (User          *user);

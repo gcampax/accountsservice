@@ -1103,9 +1103,7 @@ static void
 cache_user (Daemon *daemon,
             User   *user)
 {
-        GError      *error = NULL;
         gchar       *filename;
-        gchar       *comment;
         const char  *user_name;
 
         /* Always use the canonical user name looked up */
@@ -1113,15 +1111,7 @@ cache_user (Daemon *daemon,
 
         filename = g_build_filename (USERDIR, user_name, NULL);
         if (!g_file_test (filename, G_FILE_TEST_EXISTS)) {
-                comment = g_strdup_printf ("# Cached file for %s\n\n", user_name);
-                g_file_set_contents (filename, comment, -1, &error);
-                g_free (comment);
-
-                if (error != NULL) {
-                        g_warning ("Couldn't write user cache file: %s: %s",
-                                   filename, error->message);
-                        g_error_free (error);
-                }
+                user_save (user);
         }
 
         g_free (filename);

@@ -469,6 +469,12 @@ user_register (User *user)
 }
 
 void
+user_save (User *user)
+{
+    save_extra_data (user);
+}
+
+void
 user_unregister (User *user)
 {
         g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (user));
