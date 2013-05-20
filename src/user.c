@@ -285,6 +285,9 @@ user_update_from_pwent (User          *user,
                 g_object_notify (G_OBJECT (user), "password-mode");
         }
 
+        /* FIXME: this relies on heuristics that don't always come out
+         * right.
+         */
         user->system_account = daemon_local_user_is_excluded (user->daemon,
                                                               user->user_name,
                                                               pwent->pw_shell,
@@ -368,6 +371,16 @@ user_update_local_account_property (User          *user,
                 return;
         user->local_account = local;
         g_object_notify (G_OBJECT (user), "local-account");
+}
+
+void
+user_update_system_account_property (User          *user,
+                                     gboolean       system)
+{
+        if (system == user->system_account)
+                return;
+        user->system_account = system;
+        g_object_notify (G_OBJECT (user), "system-account");
 }
 
 static void

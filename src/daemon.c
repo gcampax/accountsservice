@@ -1180,6 +1180,7 @@ daemon_create_user_authorized_cb (Daemon                *daemon,
 
         user = daemon_local_find_user_by_name (daemon, cd->user_name);
         user_update_local_account_property (user, TRUE);
+        user_update_system_account_property (user, FALSE);
 
         cache_user (daemon, user);
 
@@ -1230,6 +1231,8 @@ daemon_cache_user_authorized_cb (Daemon                *daemon,
                              "No user with the name %s found", user_name);
                 return;
         }
+
+        user_update_system_account_property (user, FALSE);
 
         cache_user (daemon, user);
 

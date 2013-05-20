@@ -59,6 +59,8 @@ void           user_update_from_keyfile     (User          *user,
                                              GKeyFile      *keyfile);
 void           user_update_local_account_property (User          *user,
                                                    gboolean       local);
+void           user_update_system_account_property (User          *user,
+                                                    gboolean       system);
 
 void           user_register                (User          *user);
 void           user_unregister              (User          *user);
