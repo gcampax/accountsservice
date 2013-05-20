@@ -77,6 +77,8 @@ static const char *default_excludes[] = {
         "games",
         "man",
         "at",
+        "gdm",
+        "gnome-initial-setup",
         NULL
 };
 
