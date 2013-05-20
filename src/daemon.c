@@ -1099,6 +1099,34 @@ daemon_get_daemon_version (AccountsAccounts *object)
     return VERSION;
 }
 
+static void
+cache_user (Daemon *daemon,
+            User   *user)
+{
+        GError      *error = NULL;
+        gchar       *filename;
+        gchar       *comment;
+        const char  *user_name;
+
+        /* Always use the canonical user name looked up */
+        user_name = user_get_user_name (user);
+
+        filename = g_build_filename (USERDIR, user_name, NULL);
+        if (!g_file_test (filename, G_FILE_TEST_EXISTS)) {
+                comment = g_strdup_printf ("# Cached file for %s\n\n", user_name);
+                g_file_set_contents (filename, comment, -1, &error);
+                g_free (comment);
+
+                if (error != NULL) {
+                        g_warning ("Couldn't write user cache file: %s: %s",
+                                   filename, error->message);
+                        g_error_free (error);
+                }
+        }
+
+        g_free (filename);
+}
+
 typedef struct {
         gchar *user_name;
         gchar *real_name;
@@ -1166,6 +1194,8 @@ daemon_create_user_authorized_cb (Daemon                *daemon,
         user = daemon_local_find_user_by_name (daemon, cd->user_name);
         user_update_local_account_property (user, TRUE);
 
+        cache_user (daemon, user);
+
         accounts_accounts_complete_create_user (NULL, context, user_get_object_path (user));
 }
 
@@ -1203,9 +1233,6 @@ daemon_cache_user_authorized_cb (Daemon                *daemon,
                                  gpointer               data)
 {
         const gchar *user_name = data;
-        GError      *error = NULL;
-        gchar       *filename;
-        gchar       *comment;
         User        *user;
 
         sys_log (context, "cache user '%s'", user_name);
@@ -1217,23 +1244,7 @@ daemon_cache_user_authorized_cb (Daemon                *daemon,
                 return;
         }
 
-        /* Always use the canonical user name looked up */
-        user_name = user_get_user_name (user);
-
-        filename = g_build_filename (USERDIR, user_name, NULL);
-        if (!g_file_test (filename, G_FILE_TEST_EXISTS)) {
-                comment = g_strdup_printf ("# Cached file for %s\n\n", user_name);
-                g_file_set_contents (filename, comment, -1, &error);
-                g_free (comment);
-
-                if (error != NULL) {
-                        g_warning ("Couldn't write user cache file: %s: %s",
-                                   filename, error->message);
-                        g_error_free (error);
-                }
-        }
-
-        g_free (filename);
+        cache_user (daemon, user);
 
         accounts_accounts_complete_cache_user (NULL, context, user_get_object_path (user));
 }
