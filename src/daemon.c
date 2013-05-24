@@ -706,11 +706,11 @@ queue_reload_autologin (Daemon *daemon)
 }
 
 static void
-on_passwd_monitor_changed (GFileMonitor      *monitor,
-                           GFile             *file,
-                           GFile             *other_file,
-                           GFileMonitorEvent  event_type,
-                           Daemon            *daemon)
+on_users_monitor_changed (GFileMonitor      *monitor,
+                          GFile             *file,
+                          GFile             *other_file,
+                          GFileMonitorEvent  event_type,
+                          Daemon            *daemon)
 {
         if (event_type != G_FILE_MONITOR_EVENT_CHANGED &&
             event_type != G_FILE_MONITOR_EVENT_CREATED) {
@@ -779,7 +779,7 @@ daemon_init (Daemon *daemon)
         if (daemon->priv->passwd_monitor != NULL) {
                 g_signal_connect (daemon->priv->passwd_monitor,
                                   "changed",
-                                  G_CALLBACK (on_passwd_monitor_changed),
+                                  G_CALLBACK (on_users_monitor_changed),
                                   daemon);
         } else {
                 g_warning ("Unable to monitor %s: %s", PATH_PASSWD, error->message);
@@ -788,7 +788,7 @@ daemon_init (Daemon *daemon)
         if (daemon->priv->shadow_monitor != NULL) {
                 g_signal_connect (daemon->priv->shadow_monitor,
                                   "changed",
-                                  G_CALLBACK (on_passwd_monitor_changed),
+                                  G_CALLBACK (on_users_monitor_changed),
                                   daemon);
         } else {
                 g_warning ("Unable to monitor %s: %s", PATH_SHADOW, error->message);
