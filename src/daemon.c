@@ -762,20 +762,6 @@ daemon_init (Daemon *daemon)
                                                             G_FILE_MONITOR_NONE,
                                                             NULL,
                                                             &error);
-        g_object_unref (file);
-        file = g_file_new_for_path (PATH_SHADOW);
-        daemon->priv->shadow_monitor = g_file_monitor_file (file,
-                                                            G_FILE_MONITOR_NONE,
-                                                            NULL,
-                                                            &error);
-        g_object_unref (file);
-        file = g_file_new_for_path (PATH_GDM_CUSTOM);
-        daemon->priv->gdm_monitor = g_file_monitor_file (file,
-                                                         G_FILE_MONITOR_NONE,
-                                                         NULL,
-                                                         &error);
-        g_object_unref (file);
-
         if (daemon->priv->passwd_monitor != NULL) {
                 g_signal_connect (daemon->priv->passwd_monitor,
                                   "changed",
@@ -785,6 +771,13 @@ daemon_init (Daemon *daemon)
                 g_warning ("Unable to monitor %s: %s", PATH_PASSWD, error->message);
                 g_error_free (error);
         }
+        g_object_unref (file);
+
+        file = g_file_new_for_path (PATH_SHADOW);
+        daemon->priv->shadow_monitor = g_file_monitor_file (file,
+                                                            G_FILE_MONITOR_NONE,
+                                                            NULL,
+                                                            &error);
         if (daemon->priv->shadow_monitor != NULL) {
                 g_signal_connect (daemon->priv->shadow_monitor,
                                   "changed",
@@ -793,7 +786,14 @@ daemon_init (Daemon *daemon)
         } else {
                 g_warning ("Unable to monitor %s: %s", PATH_SHADOW, error->message);
                 g_error_free (error);
-       }
+        }
+        g_object_unref (file);
+
+        file = g_file_new_for_path (PATH_GDM_CUSTOM);
+        daemon->priv->gdm_monitor = g_file_monitor_file (file,
+                                                         G_FILE_MONITOR_NONE,
+                                                         NULL,
+                                                         &error);
         if (daemon->priv->gdm_monitor != NULL) {
                 g_signal_connect (daemon->priv->gdm_monitor,
                                   "changed",
@@ -803,6 +803,7 @@ daemon_init (Daemon *daemon)
                 g_warning ("Unable to monitor %s: %s", PATH_GDM_CUSTOM, error->message);
                 g_error_free (error);
         }
+        g_object_unref (file);
 
         queue_reload_users (daemon);
         queue_reload_autologin (daemon);
