@@ -1691,6 +1691,7 @@ _remove_session (ActUserManager *manager,
 
         g_debug ("ActUserManager: Session removed for %s", describe_user (user));
         _act_user_remove_session (user, session_id);
+        g_hash_table_remove (manager->priv->sessions, session_id);
 }
 
 static void
