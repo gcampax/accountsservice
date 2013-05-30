@@ -389,6 +389,8 @@ entry_generator_wtmp (GHashTable *users,
                 g_object_set (user, "login-history", g_variant_new ("a(xxa{sv})", builder), NULL);
                 g_variant_builder_unref (builder);
                 g_list_free (accounting->previous_logins);
+
+                user_changed (user);
         }
 
         g_hash_table_unref (login_hash);

@@ -505,6 +505,12 @@ user_unregister (User *user)
         g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (user));
 }
 
+void
+user_changed (User *user)
+{
+        accounts_user_emit_changed (ACCOUNTS_USER (user));
+}
+
 User *
 user_new (Daemon *daemon,
           uid_t   uid)
@@ -728,7 +734,7 @@ user_change_email_authorized_cb (Daemon                *daemon,
                 g_object_notify (G_OBJECT (user), "email");
         }
 
-        accounts_user_complete_set_email (ACCOUNTS_USER (user), context);  
+        accounts_user_complete_set_email (ACCOUNTS_USER (user), context);
 }
 
 

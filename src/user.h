@@ -64,6 +64,7 @@ void           user_update_system_account_property (User          *user,
 
 void           user_register                (User          *user);
 void           user_unregister              (User          *user);
+void           user_changed                 (User          *user);
 
 void           user_save                    (User          *user);
 
