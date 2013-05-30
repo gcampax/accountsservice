@@ -1053,7 +1053,7 @@ add_new_user_for_object_path (const char     *object_path,
 {
         ActUser *user;
 
-        user = g_hash_table_lookup (manager->priv->users_by_object_path, object_path); 
+        user = g_hash_table_lookup (manager->priv->users_by_object_path, object_path);
 
         if (user != NULL) {
                 g_debug ("ActUserManager: tracking existing %s with object path %s",
@@ -1537,7 +1537,7 @@ on_get_x11_display_finished (GObject      *object,
                 unload_new_session (new_session);
                 return;
         }
-  
+
         g_debug ("ActUserManager: Found x11 display of session '%s': %s",
                  new_session->id, x11_display);
 
@@ -1834,14 +1834,13 @@ _remove_stale_systemd_sessions (ActUserManager *manager,
         node = manager->priv->new_sessions;
         while (node != NULL) {
                 ActUserManagerNewSession *new_session = node->data;
-                GSList *next_node = node->next;
+                node = node->next;
 
                 if (g_hash_table_contains (systemd_sessions, new_session->id)) {
                         continue;
                 }
 
                 sessions_to_remove = g_slist_prepend (sessions_to_remove, new_session->id);
-                node = next_node;
         }
 
         node = sessions_to_remove;
@@ -2491,7 +2490,7 @@ load_users (ActUserManager *manager)
         g_debug ("ActUserManager: calling 'ListCachedUsers'");
 
         accounts_accounts_call_list_cached_users (manager->priv->accounts_proxy,
-                                                  NULL, 
+                                                  NULL,
                                                   on_list_cached_users_finished,
                                                   g_object_ref (manager));
         manager->priv->listing_cached_users = TRUE;
