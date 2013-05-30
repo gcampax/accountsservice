@@ -122,7 +122,8 @@ struct _ActUser {
         char           *icon_file;
         char           *language;
         char           *x_session;
-        GList          *sessions;
+        GList          *our_sessions;
+        GList          *other_sessions;
         int             login_frequency;
         gint64          login_time;
         GVariant       *login_history;
@@ -165,17 +166,24 @@ session_compare (const char *a,
 
 void
 _act_user_add_session (ActUser    *user,
-                       const char *ssid)
+                       const char *ssid,
+                       gboolean    is_ours)
 {
         GList *li;
 
         g_return_if_fail (ACT_IS_USER (user));
         g_return_if_fail (ssid != NULL);
 
-        li = g_list_find_custom (user->sessions, ssid, (GCompareFunc)session_compare);
+        li = g_list_find_custom (user->our_sessions, ssid, (GCompareFunc)session_compare);
+        if (li == NULL)
+                li = g_list_find_custom (user->other_sessions, ssid, (GCompareFunc)session_compare);
+
         if (li == NULL) {
                 g_debug ("ActUser: adding session %s", ssid);
-                user->sessions = g_list_prepend (user->sessions, g_strdup (ssid));
+                if (is_ours)
+                        user->our_sessions = g_list_prepend (user->our_sessions, g_strdup (ssid));
+                else
+                        user->other_sessions = g_list_prepend (user->other_sessions, g_strdup (ssid));
                 g_signal_emit (user, signals[SESSIONS_CHANGED], 0);
         } else {
                 g_debug ("ActUser: session already present: %s", ssid);
@@ -186,16 +194,22 @@ void
 _act_user_remove_session (ActUser    *user,
                           const char *ssid)
 {
-        GList *li;
+        GList *li, **headp;
 
         g_return_if_fail (ACT_IS_USER (user));
         g_return_if_fail (ssid != NULL);
 
-        li = g_list_find_custom (user->sessions, ssid, (GCompareFunc)session_compare);
+        headp = &(user->our_sessions);
+        li = g_list_find_custom (user->our_sessions, ssid, (GCompareFunc)session_compare);
+        if (li == NULL) {
+                headp = &(user->other_sessions);
+                li = g_list_find_custom (user->other_sessions, ssid, (GCompareFunc)session_compare);
+        }
+
         if (li != NULL) {
                 g_debug ("ActUser: removing session %s", ssid);
                 g_free (li->data);
-                user->sessions = g_list_delete_link (user->sessions, li);
+                *headp = g_list_delete_link (*headp, li);
                 g_signal_emit (user, signals[SESSIONS_CHANGED], 0);
         } else {
                 g_debug ("ActUser: session not found: %s", ssid);
@@ -206,14 +220,31 @@ _act_user_remove_session (ActUser    *user,
  * act_user_get_num_sessions:
  * @user: a user
  *
- * Get the number of current sessions for a user.
+ * Get the number of sessions for a user that are graphical and on the
+ * same seat as the session of the calling process.
  *
  * Returns: the number of sessions
  */
 guint
 act_user_get_num_sessions (ActUser    *user)
 {
-        return g_list_length (user->sessions);
+        return g_list_length (user->our_sessions);
+}
+
+/**
+ * act_user_get_num_sessions_anywhere:
+ * @user: a user
+ *
+ * Get the number of sessions for a user on any seat of any type.
+ * See also act_user_get_num_sessions().
+ *
+ * Returns: the number of sessions
+ */
+guint
+act_user_get_num_sessions_anywhere (ActUser    *user)
+{
+        return (g_list_length (user->our_sessions)
+                + g_list_length (user->other_sessions));
 }
 
 static void
@@ -507,7 +538,8 @@ act_user_init (ActUser *user)
         user->local_account = TRUE;
         user->user_name = NULL;
         user->real_name = NULL;
-        user->sessions = NULL;
+        user->our_sessions = NULL;
+        user->other_sessions = NULL;
         user->login_history = NULL;
 
         user->connection = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
@@ -825,8 +857,8 @@ act_user_collate (ActUser *user1,
         }
 
 
-        len1 = g_list_length (user1->sessions);
-        len2 = g_list_length (user2->sessions);
+        len1 = g_list_length (user1->our_sessions);
+        len2 = g_list_length (user2->our_sessions);
 
         if (len1 > len2) {
                 return -1;
@@ -868,14 +900,30 @@ act_user_collate (ActUser *user1,
  * act_user_is_logged_in:
  * @user: a #ActUser
  *
- * Returns whether or not #ActUser is currently logged in.
+ * Returns whether or not #ActUser is currently graphically logged in
+ * on the same seat as the seat of the session of the calling process.
  *
  * Returns: %TRUE or %FALSE
  */
 gboolean
 act_user_is_logged_in (ActUser *user)
 {
-        return user->sessions != NULL;
+        return user->our_sessions != NULL;
+}
+
+/**
+ * act_user_is_logged_in_anywhere:
+ * @user: a #ActUser
+ *
+ * Returns whether or not #ActUser is currently logged in in any way
+ * whatsoever.  See also act_user_is_logged_in().
+ *
+ * Returns: %TRUE or %FALSE
+ */
+gboolean
+act_user_is_logged_in_anywhere (ActUser *user)
+{
+        return user->our_sessions != NULL || user->other_sessions != NULL;
 }
 
 /**
@@ -1007,22 +1055,24 @@ act_user_get_object_path (ActUser *user)
  * act_user_get_primary_session_id:
  * @user: a #ActUser
  *
- * Returns the primary ConsoleKit session id of @user, or %NULL if @user isn't
- * logged in.
+ * Returns the id of the primary session of @user, or %NULL if @user
+ * has no primary session.  The primary session will always be
+ * graphical and will be chosen from the sessions on the same seat as
+ * the seat of the session of the calling process.
  *
- * Returns: (transfer none): the primary ConsoleKit session id of the user
+ * Returns: (transfer none): the id of the primary session of the user
  */
 const char *
 act_user_get_primary_session_id (ActUser *user)
 {
-        if (!act_user_is_logged_in (user)) {
-                g_debug ("User %s is not logged in, so has no primary session",
+        if (user->our_sessions == NULL) {
+                g_debug ("User %s is not logged in here, so has no primary session",
                          act_user_get_user_name (user));
                 return NULL;
         }
 
         /* FIXME: better way to choose? */
-        return user->sessions->data;
+        return user->our_sessions->data;
 }
 
 static void
@@ -1355,15 +1405,21 @@ _act_user_update_login_frequency (ActUser    *user,
 }
 
 static void
-copy_sessions_list (ActUser *user,
-                    ActUser *user_to_copy)
+copy_sessions_lists (ActUser *user,
+                     ActUser *user_to_copy)
 {
         GList *node;
 
-        for (node = g_list_last (user_to_copy->sessions);
+        for (node = g_list_last (user_to_copy->our_sessions);
              node != NULL;
              node = node->prev) {
-                user->sessions = g_list_prepend (user->sessions, g_strdup (node->data));
+                user->our_sessions = g_list_prepend (user->our_sessions, g_strdup (node->data));
+        }
+
+        for (node = g_list_last (user_to_copy->other_sessions);
+             node != NULL;
+             node = node->prev) {
+                user->other_sessions = g_list_prepend (user->other_sessions, g_strdup (node->data));
         }
 }
 
@@ -1388,8 +1444,8 @@ _act_user_load_from_user (ActUser    *user,
                 g_object_notify (G_OBJECT (user), "user-name");
         }
 
-        if (user->sessions == NULL) {
-                copy_sessions_list (user, user_to_copy);
+        if (user->our_sessions == NULL && user->other_sessions == NULL) {
+                copy_sessions_lists (user, user_to_copy);
                 g_signal_emit (user, signals[SESSIONS_CHANGED], 0);
         }
 

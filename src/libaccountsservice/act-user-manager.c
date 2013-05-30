@@ -427,6 +427,58 @@ session_is_login_window (ActUserManager *manager,
         return _ck_session_is_login_window (manager, session_id);
 }
 
+static gboolean
+_ck_session_is_on_our_seat (ActUserManager *manager,
+                            const char     *session_id)
+{
+        /* With ConsoleKit, we only ever see sessions on our seat. */
+        return TRUE;
+}
+
+#ifdef WITH_SYSTEMD
+static gboolean
+_systemd_session_is_on_our_seat (ActUserManager *manager,
+                                 const char     *session_id)
+{
+        int   res;
+        int   ret;
+        char *session_seat;
+
+        ret = FALSE;
+        res = sd_session_get_seat (session_id, &session_seat);
+        if (res == -ENOENT) {
+                goto out;
+        } else if (res < 0) {
+                g_debug ("failed to determine seat of session %s: %s",
+                         session_id,
+                         strerror (-res));
+                goto out;
+        }
+
+        if (g_strcmp0 (manager->priv->seat.id, session_seat) == 0) {
+                ret = TRUE;
+        }
+
+        free (session_seat);
+
+out:
+        return ret;
+}
+#endif
+
+static gboolean
+session_is_on_our_seat (ActUserManager *manager,
+                        const char     *session_id)
+{
+#ifdef WITH_SYSTEMD
+        if (LOGIND_RUNNING()) {
+                return _systemd_session_is_on_our_seat (manager, session_id);
+        }
+#endif
+
+        return _ck_session_is_on_our_seat (manager, session_id);
+}
+
 /**
  * act_user_manager_goto_login_session:
  * @manager: the user manager
@@ -759,13 +811,14 @@ username_in_exclude_list (ActUserManager *manager,
 static void
 add_session_for_user (ActUserManager *manager,
                       ActUser        *user,
-                      const char     *ssid)
+                      const char     *ssid,
+                      gboolean        is_ours)
 {
         g_hash_table_insert (manager->priv->sessions,
                              g_strdup (ssid),
                              g_object_ref (user));
 
-        _act_user_add_session (user, ssid);
+        _act_user_add_session (user, ssid, is_ours);
         g_debug ("ActUserManager: added session for %s", describe_user (user));
 }
 
@@ -1514,12 +1567,12 @@ _get_x11_display_for_new_systemd_session (ActUserManagerNewSession *new_session)
         }
 
         if (g_strcmp0 (session_type, "x11") != 0) {
-                g_debug ("ActUserManager: ignoring %s session '%s' since it's not graphical",
+                g_debug ("ActUserManager: (mostly) ignoring %s session '%s' since it's not graphical",
                          session_type,
                          new_session->id);
                 free (session_type);
-                unload_new_session (new_session);
-                return;
+                x11_display = NULL;
+                goto done;
         }
         free (session_type);
 
@@ -1537,6 +1590,7 @@ _get_x11_display_for_new_systemd_session (ActUserManagerNewSession *new_session)
         g_debug ("ActUserManager: Found x11 display of session '%s': %s",
                  new_session->id, x11_display);
 
+ done:
         new_session->x11_display = g_strdup (x11_display);
         free (x11_display);
         new_session->state++;
@@ -1569,39 +1623,37 @@ maybe_add_new_session (ActUserManagerNewSession *new_session)
 {
         ActUserManager *manager;
         ActUser        *user;
+        gboolean        is_ours;
 
         manager = ACT_USER_MANAGER (new_session->manager);
 
-        if (new_session->x11_display == NULL || new_session->x11_display[0] == '\0') {
-                g_debug ("AcUserManager: ignoring session '%s' since it's not graphical",
-                         new_session->id);
-                goto done;
-        }
+        is_ours = TRUE;
 
-        if (session_is_login_window (manager, new_session->id)) {
-                goto done;
+        if (new_session->x11_display == NULL || new_session->x11_display[0] == '\0') {
+                g_debug ("AcUserManager: (mostly) ignoring session '%s' since it's not graphical",
+                         new_session->id);
+                is_ours = FALSE;
+        } else if (session_is_login_window (manager, new_session->id)) {
+                new_session->state = ACT_USER_MANAGER_NEW_SESSION_STATE_LOADED;
+                unload_new_session (new_session);
+                return;
+        } else if (!session_is_on_our_seat (manager, new_session->id)) {
+                is_ours = FALSE;
         }
 
         user = act_user_manager_get_user_by_id (manager, new_session->uid);
         if (user == NULL) {
-                goto failed;
+                unload_new_session (new_session);
+                return;
         }
 
-        add_session_for_user (manager, user, new_session->id);
+        add_session_for_user (manager, user, new_session->id, is_ours);
 
         /* if we haven't yet gotten the login frequency
            then at least add one because the session exists */
         if (act_user_get_login_frequency (user) == 0) {
                 _act_user_update_login_frequency (user, 1);
         }
-
-done:
-        new_session->state = ACT_USER_MANAGER_NEW_SESSION_STATE_LOADED;
-        unload_new_session (new_session);
-        return;
-
-failed:
-        unload_new_session (new_session);
 }
 
 static void
