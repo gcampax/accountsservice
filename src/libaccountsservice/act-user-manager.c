@@ -1828,6 +1828,8 @@ reload_systemd_sessions (ActUserManager *manager)
 
         if (sessions != NULL) {
                 for (i = 0; sessions[i] != NULL; i ++) {
+                        char *session_class;
+
                         res = sd_session_get_state (sessions[i], &state);
 
                         if (res < 0) {
@@ -1841,6 +1843,21 @@ reload_systemd_sessions (ActUserManager *manager)
                         if (is_closing) {
                                 continue;
                         }
+
+                        session_class = NULL;
+                        res = sd_session_get_class (sessions[i], &session_class);
+
+                        if (res < 0) {
+                                g_debug ("Failed to determine class of session %s: %s", sessions[i], strerror (-res));
+                                continue;
+                        }
+
+                        if (g_strcmp0 (session_class, "user") != 0) {
+                                g_debug ("Ignoring non-user session %s (class %s)", sessions[i], session_class);
+                                free (session_class);
+                                continue;
+                        }
+                        free (session_class);
 
                         g_hash_table_insert (systemd_sessions,
                                              sessions[i], NULL);
