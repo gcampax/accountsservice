@@ -1375,6 +1375,19 @@ daemon_delete_user_authorized_cb (Daemon                *daemon,
 
         sys_log (context, "delete user '%s' (%d)", pwent->pw_name, ud->uid);
 
+        if (daemon->priv->autologin != NULL) {
+                User *user;
+
+                user = daemon_local_find_user_by_id (daemon, ud->uid);
+
+                g_assert (user != NULL);
+
+                if (daemon->priv->autologin == user) {
+                        daemon_local_set_automatic_login (daemon, user, FALSE, NULL);
+                }
+
+        }
+
         filename = g_build_filename (USERDIR, pwent->pw_name, NULL);
         g_remove (filename);
         g_free (filename);
