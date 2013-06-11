@@ -1660,6 +1660,11 @@ user_change_automatic_login_authorized_cb (Daemon                *daemon,
                  "%s automatic login for user '%s' (%d)",
                  enabled ? "enable" : "disable", user->user_name, user->uid);
 
+        if (user->locked) {
+                throw_error (context, ERROR_FAILED, "failed to change automatic login: user is locked");
+                return;
+        }
+
         if (!daemon_local_set_automatic_login (daemon, user, enabled, &error)) {
                 throw_error (context, ERROR_FAILED, "failed to change automatic login: %s", error->message);
                 g_error_free (error);
