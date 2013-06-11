@@ -1,3 +1,16 @@
+Changes in 0.6.33
+=================
+
+* Keep track of non-graphical sessions (#65160)
+* Forget obsolete sessions (#65159)
+* Monitor wtmp for changes (#63159)
+* Ignore non-user sessions (#701514)
+* Rework system account handling (#64769)
+  - Never treat cached users as system accounts
+  - Add gdm, gnome-initial-setup users to blacklist
+  - Store system-account bit in key file
+  - Cache newly-created users explicitly
+
 Changes in 0.6.32
 =================
 
