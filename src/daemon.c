@@ -993,6 +993,12 @@ daemon_local_find_user_by_name (Daemon      *daemon,
         return user;
 }
 
+User *
+daemon_local_get_automatic_login_user (Daemon *daemon)
+{
+        return daemon->priv->autologin;
+}
+
 static gboolean
 daemon_find_user_by_id (AccountsAccounts      *accounts,
                         GDBusMethodInvocation *context,

@@ -75,6 +75,7 @@ User *daemon_local_find_user_by_id   (Daemon                *daemon,
                                       uid_t                  uid);
 User *daemon_local_find_user_by_name (Daemon                *daemon,
                                       const gchar           *name);
+User *daemon_local_get_automatic_login_user (Daemon         *daemon);
 gboolean daemon_local_user_is_excluded (Daemon              *daemon,
                                         const gchar         *name,
                                         const gchar         *shell,

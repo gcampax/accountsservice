@@ -1287,6 +1287,28 @@ user_change_locked_authorized_cb (Daemon                *daemon,
 
                 user->locked = locked;
 
+                if (user->automatic_login) {
+                    User *automatic_login_user;
+
+                    automatic_login_user = daemon_local_get_automatic_login_user (daemon);
+                    if (user->locked) {
+                            /* If automatic login is enabled for the user then
+                             * disable it in the config file, but keep the state
+                             * attached to the user unharmed so it can be restored
+                             * later in the session
+                             */
+                            if (user == automatic_login_user) {
+                                    daemon_local_set_automatic_login (daemon, user, FALSE, NULL);
+                                    user->automatic_login = TRUE;
+                            }
+                    } else {
+                            if (automatic_login_user == NULL) {
+                                    user->automatic_login = FALSE;
+                                    daemon_local_set_automatic_login (daemon, user, TRUE, NULL);
+                            }
+                    }
+                }
+
                 accounts_user_emit_changed (ACCOUNTS_USER (user));
 
                 g_object_notify (G_OBJECT (user), "locked");
