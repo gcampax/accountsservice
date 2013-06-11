@@ -1,3 +1,10 @@
+Changes in 0.6.34
+=================
+
+* Try to sanitize automatic login setting when user account is
+  deleted or disabled. (#54506)
+* Fix build
+
 Changes in 0.6.33
 =================
 
