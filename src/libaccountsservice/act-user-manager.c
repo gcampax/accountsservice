@@ -746,12 +746,12 @@ _get_systemd_seat_id (ActUserManager *manager)
         int   res;
         char *seat_id;
 
-        res = sd_session_get_seat (manager->priv->seat.session_id,
-                                   &seat_id);
+        res = sd_session_get_seat (NULL, &seat_id);
 
-        if (res < 0) {
-                g_warning ("Could not get seat of session '%s': %s",
-                           manager->priv->seat.session_id,
+        if (res == -ENOENT) {
+                seat_id = NULL;
+        } else if (res < 0) {
+                g_warning ("Could not get current seat: %s",
                            strerror (-res));
                 unload_seat (manager);
                 return;
@@ -1148,9 +1148,11 @@ _get_current_systemd_session_id (ActUserManager *manager)
         char *session_id;
         int   res;
 
-        res = sd_seat_get_active ("seat0", &session_id, NULL);
+        res = sd_pid_get_session (0, &session_id);
 
-        if (res < 0) {
+        if (res == -ENOENT) {
+                session_id = NULL;
+        } else if (res < 0) {
                 g_debug ("Failed to identify the current session: %s",
                          strerror (-res));
                 unload_seat (manager);
