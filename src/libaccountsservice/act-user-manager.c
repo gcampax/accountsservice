@@ -2536,9 +2536,13 @@ load_seat_incrementally (ActUserManager *manager)
 static gboolean
 load_idle (ActUserManager *manager)
 {
+        /* The order below is important: load_seat_incrementally might
+           set "is-loaded" immediately and we thus need to call
+           load_users before it.
+        */
+        load_users (manager);
         manager->priv->seat.state = ACT_USER_MANAGER_SEAT_STATE_UNLOADED + 1;
         load_seat_incrementally (manager);
-        load_users (manager);
         manager->priv->load_id = 0;
 
         return FALSE;
