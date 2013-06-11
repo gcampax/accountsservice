@@ -238,6 +238,9 @@ act_user_get_num_sessions (ActUser    *user)
  * Get the number of sessions for a user on any seat of any type.
  * See also act_user_get_num_sessions().
  *
+ * (Currently, this function is only implemented for systemd-logind.
+ * For ConsoleKit, it is equivalent to act_user_get_num_sessions.)
+ *
  * Returns: the number of sessions
  */
 guint
@@ -917,6 +920,9 @@ act_user_is_logged_in (ActUser *user)
  *
  * Returns whether or not #ActUser is currently logged in in any way
  * whatsoever.  See also act_user_is_logged_in().
+ *
+ * (Currently, this function is only implemented for systemd-logind.
+ * For ConsoleKit, it is equivalent to act_user_is_logged_in.)
  *
  * Returns: %TRUE or %FALSE
  */
