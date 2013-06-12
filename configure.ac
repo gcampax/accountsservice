@@ -38,8 +38,6 @@ AC_SUBST(LIBACCOUNTSSERVICE_CFLAGS)
 
 GOBJECT_INTROSPECTION_CHECK([0.9.12])
 
-VAPIGEN_CHECK
-
 dnl ---------------------------------------------------------------------------
 dnl - Core configuration
 dnl ---------------------------------------------------------------------------
