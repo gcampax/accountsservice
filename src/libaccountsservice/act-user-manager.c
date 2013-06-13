@@ -1933,12 +1933,13 @@ reload_systemd_sessions (ActUserManager *manager)
 }
 
 #endif
-static void
+static gboolean
 on_session_monitor_event (GPollableInputStream *stream,
                           ActUserManager       *manager)
 {
         sd_login_monitor_flush (manager->priv->seat.session_monitor);
         reload_systemd_sessions (manager);
+        return TRUE;
 }
 
 static void
