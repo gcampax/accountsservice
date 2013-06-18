@@ -1829,6 +1829,9 @@ user_finalize (GObject *object)
         g_free (user->location);
         g_free (user->password_hint);
 
+	if (user->login_history)
+		g_variant_unref (user->login_history);
+
         if (G_OBJECT_CLASS (user_parent_class)->finalize)
                 (*G_OBJECT_CLASS (user_parent_class)->finalize) (object);
 }
