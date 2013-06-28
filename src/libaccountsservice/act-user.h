@@ -74,6 +74,7 @@ gboolean       act_user_get_locked                (ActUser   *user);
 gboolean       act_user_get_automatic_login       (ActUser   *user);
 gboolean       act_user_is_system_account         (ActUser   *user);
 gboolean       act_user_is_local_account          (ActUser   *user);
+gboolean       act_user_is_nonexistent            (ActUser   *user);
 const char    *act_user_get_icon_file             (ActUser   *user);
 const char    *act_user_get_language              (ActUser   *user);
 const char    *act_user_get_x_session             (ActUser   *user);

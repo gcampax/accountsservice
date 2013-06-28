@@ -2148,6 +2148,9 @@ give_up (ActUserManager                 *manager,
         g_debug ("ActUserManager: account service unavailable, "
                  "giving up");
         request->state = ACT_USER_MANAGER_GET_USER_STATE_UNFETCHED;
+
+        if (request->user)
+                _act_user_update_as_nonexistent (request->user);
 }
 
 static void
